@@ -1,0 +1,419 @@
+
+{% load django_bootstrap5 %}
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Athlete Record Management</title>
+    {% bootstrap_css %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="{% static 'management/css/dark_mode.css' %}">
+    
+    <!-- Premium UI Support -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        navy: '#0f172a',
+                        brand: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#f43f5e',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        // Apply theme immediately to prevent flash
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+    <style>
+        body {
+            display: flex;
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            width: 260px;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: -260px;
+            background-color: #343a40;
+            color: white;
+            padding-top: 20px;
+            transition: left 0.3s;
+            z-index: 1030;
+        }
+        .sidebar.active {
+            left: 0;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px 20px;
+            border-bottom: 1px solid #495057;
+        }
+        .sidebar a {
+            color: #adb5bd;
+            text-decoration: none;
+            display: block;
+            padding: 10px 20px;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .sidebar a:hover, .sidebar a.active {
+            background-color: #495057;
+            color: white;
+        }
+        .sidebar a i {
+            margin-right: 15px;
+        }
+        .main-content {
+            margin-left: 0;
+            padding: 20px;
+            width: 100%;
+            transition: margin-left 0.3s;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #sidebar-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+        }
+        .user-info span {
+            margin-right: 15px;
+        }
+        #dark-mode-toggle {
+            margin-left: 15px;
+        }
+        body.dark-mode {
+            background-color: #1a1d20;
+            color: #f8f9fa;
+        }
+        body.dark-mode .header {
+            background-color: #212529;
+            color: #f8f9fa;
+            border: 1px solid #3d4246;
+        }
+        /* Athlete mobile drawer: same light panel as athlete_dashboard.html */
+        .athlete-drawer-panel { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        .athlete-drawer-item { transition: background-color 0.15s ease, color 0.15s ease; }
+    </style>
+</head>
+<body>
+    {% if user.is_authenticated %}
+        {% if portal_type == 'athlete' or is_athlete %}
+            {% with nav_name=request.resolver_match.url_name %}
+            <!-- Athlete side drawer: matches athlete_dashboard.html (primary + secondary nav + sign out) -->
+            <div id="athleteSideDrawer" class="fixed inset-0 z-[100] invisible transition-all duration-300" aria-hidden="true">
+                <div id="athleteDrawerBackdrop" class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 transition-opacity duration-300"></div>
+                <div id="athleteDrawerContent" class="athlete-drawer-panel absolute left-0 top-0 bottom-0 w-80 max-w-[min(20rem,90vw)] bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(15,23,42,0.08)] -translate-x-full transition-transform duration-300 ease-out flex flex-col text-slate-700">
+                    <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+                        <div class="flex items-center gap-3 min-w-0">
+                            <div class="shrink-0 w-11 h-11 rounded-full bg-sky-100 flex items-center justify-center ring-1 ring-sky-200/80">
+                                <i data-lucide="activity" class="w-5 h-5 text-blue-600" aria-hidden="true"></i>
+                            </div>
+                            <span class="font-bold text-[15px] text-slate-800 tracking-tight truncate">Athlete Dashboard</span>
+                        </div>
+                        <button type="button" id="closeAthleteDrawer" class="p-2 rounded-xl border border-sky-200/80 text-slate-500 hover:bg-sky-50 hover:text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40" aria-label="Close menu">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <nav class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-1.5" aria-label="Main navigation">
+                        <a href="{% url 'management:athlete_dashboard' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl font-semibold text-[15px] {% if nav_name == 'athlete_dashboard' %}bg-sky-50 text-blue-600 border border-sky-100/80 shadow-sm{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0 {% if nav_name == 'athlete_dashboard' %}text-blue-600{% else %}text-slate-400{% endif %}" aria-hidden="true"></i>
+                            <span>Dashboard</span>
+                        </a>
+                        <a href="{% url 'management:athlete_profile_update' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl font-semibold text-[15px] {% if nav_name == 'athlete_profile_update' %}bg-sky-50 text-blue-600 border border-sky-100/80 shadow-sm{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <i data-lucide="user-plus" class="w-5 h-5 shrink-0 {% if nav_name == 'athlete_profile_update' %}text-blue-600{% else %}text-slate-400{% endif %}" aria-hidden="true"></i>
+                            <span>My Profile</span>
+                        </a>
+                        <a href="{% url 'management:training_session_list' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl font-semibold text-[15px] {% if nav_name == 'training_session_list' or nav_name == 'training_session_create' or nav_name == 'training_session_update' or nav_name == 'training_session_delete' %}bg-sky-50 text-blue-600 border border-sky-100/80 shadow-sm{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <i data-lucide="calendar" class="w-5 h-5 shrink-0 {% if nav_name == 'training_session_list' or nav_name == 'training_session_create' or nav_name == 'training_session_update' or nav_name == 'training_session_delete' %}text-blue-600{% else %}text-slate-400{% endif %}" aria-hidden="true"></i>
+                            <span>Sessions</span>
+                        </a>
+                        <a href="{% url 'management:payment_list' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl font-semibold text-[15px] {% if nav_name == 'payment_list' or nav_name == 'payment_create' or nav_name == 'payment_update' or nav_name == 'payment_delete' %}bg-sky-50 text-blue-600 border border-sky-100/80 shadow-sm{% else %}text-slate-500 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <i data-lucide="credit-card" class="w-5 h-5 shrink-0 {% if nav_name == 'payment_list' or nav_name == 'payment_create' or nav_name == 'payment_update' or nav_name == 'payment_delete' %}text-blue-600{% else %}text-slate-400{% endif %}" aria-hidden="true"></i>
+                            <span>Payments</span>
+                        </a>
+                        <div class="pt-3 mt-2 border-t border-slate-100 space-y-1.5">
+                            <a href="{% url 'management:athlete_dashboard' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] hover:bg-slate-50 hover:text-slate-800">
+                                <i data-lucide="users-round" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                                <span>Team Discovery</span>
+                            </a>
+                            <a href="{% url 'management:athlete_dashboard' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] hover:bg-slate-50 hover:text-slate-800">
+                                <i data-lucide="life-buoy" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                                <span>Help &amp; Tips</span>
+                            </a>
+                        </div>
+                    </nav>
+                    <div class="p-4 sm:p-5 border-t border-slate-100 shrink-0 bg-white">
+                        <form action="{% url 'logout' %}" method="post">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-rose-100 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-300/50">
+                                <i data-lucide="log-out" class="w-4 h-4" aria-hidden="true"></i> Sign Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endwith %}
+        {% endif %}
+
+        <!-- Original Sidebar for Staff (Coach/Admin) -->
+        {% if portal_type != 'athlete' and not is_athlete %}
+        <div class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                {% if user.is_superuser %}
+                    <h3><a href="{% url 'home' %}" class="text-white text-decoration-none">Admin Console</a></h3>
+                {% elif portal_type == 'coach' %}
+                    <h3><a href="{% url 'home' %}" class="text-white text-decoration-none">Coach Portal</a></h3>
+                {% endif %}
+            </div>
+            <a href="{% url 'management:dashboard' %}" class="nav-link"><i class="fas fa-chart-line"></i>Dashboard</a>
+            <a href="{% url 'management:monitor_progress' %}" class="nav-link"><i class="fas fa-chart-bar"></i>Monitor Progress</a>
+            <a href="{% url 'management:athlete_list' %}" class="nav-link"><i class="fas fa-users"></i>Athletes</a>
+            <a href="{% url 'management:training_session_list' %}" class="nav-link"><i class="fas fa-calendar-check"></i>Training Sessions</a>
+            <a href="{% url 'management:payment_list' %}" class="nav-link"><i class="fas fa-credit-card"></i>Payments</a>
+            {% if user.is_superuser %}
+                <a href="{% url 'management:notification_history' %}" class="nav-link"><i class="fas fa-history"></i>System History</a>
+            {% endif %}
+            <hr class="bg-secondary">
+            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: none;">
+                {% csrf_token %}
+            </form>
+            <a href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                <i class="fas fa-sign-out-alt"></i>Logout
+            </a>
+        </div>
+        {% endif %}
+    {% endif %}
+
+    <div class="main-content" id="main-content">
+        <div class="header">
+            {% if user.is_authenticated %}
+                <div class="d-flex align-items-center">
+                    {% if portal_type == 'athlete' or is_athlete %}
+                        <!-- Premium Burger for Athletes -->
+                        <button id="athleteBurgerMenu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="athleteDrawerContent" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200/90 dark:border-white/10 shadow-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+                            <i data-lucide="menu" class="w-6 h-6" aria-hidden="true"></i>
+                        </button>
+                    {% else %}
+                        <!-- Standard Sidebar Toggle for Staff -->
+                        <button id="sidebar-toggle"><i class="fas fa-bars"></i></button>
+                    {% endif %}
+
+                    {% if in_portal %}
+                        {% if portal_type == 'admin' %}
+                            <div class="navbar-brand fw-bold text-dark ms-3"><i class="fas fa-user-shield me-2"></i>Admin Console</div>
+                        {% elif portal_type == 'coach' %}
+                            <div class="navbar-brand fw-bold text-primary ms-3"><i class="fas fa-user-tie me-2"></i>Coach Portal</div>
+                        {% else %}
+                            <div class="navbar-brand fw-bold text-success ms-3"><i class="fas fa-running me-2"></i>Athlete Portal</div>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% else %}
+                {% if in_portal %}
+                    {% if portal_type == 'admin' %}
+                        <div class="navbar-brand fw-bold text-dark"><i class="fas fa-user-shield me-2"></i>Admin Console</div>
+                    {% elif portal_type == 'coach' %}
+                        <div class="navbar-brand fw-bold text-primary"><i class="fas fa-user-tie me-2"></i>Coach Portal</div>
+                    {% else %}
+                        <div class="navbar-brand fw-bold text-success"><i class="fas fa-running me-2"></i>Athlete Portal</div>
+                    {% endif %}
+                {% else %}
+                    <div class="navbar-brand fw-bold text-primary"><i class="fas fa-running me-2"></i>Athlete Records</div>
+                {% endif %}
+            {% endif %}
+            <div class="user-info">
+                {% if user.is_authenticated %}
+                    {% if in_portal %}
+                        {% if portal_type == 'coach' and is_coach_dashboard %}
+                            <div class="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 p-1.5 pr-4 rounded-full border border-slate-200 dark:border-slate-700 cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-700 transition-all" id="coachProfileTrigger">
+                                {% if user.coach.profile_picture %}
+                                    <img src="{{ user.coach.profile_picture.url }}" class="w-10 h-10 rounded-full object-cover border-2 border-brand" alt="Coach Profile">
+                                {% else %}
+                                    <div class="w-10 h-10 rounded-full bg-brand/10 flex items-center justify-center border-2 border-brand">
+                                        <i data-lucide="user" class="w-5 h-5 text-brand"></i>
+                                    </div>
+                                {% endif %}
+                                <div class="hidden sm:block">
+                                    <p class="text-[11px] font-black text-slate-900 dark:text-white uppercase leading-none">{{ user.get_full_name|default:user.username }}</p>
+                                    <p class="text-[9px] font-bold text-brand uppercase tracking-widest mt-0.5">HEAD COACH</p>
+                                </div>
+                            </div>
+                        {% elif portal_type == 'admin' or is_athlete or portal_type == 'coach' %}
+                            <span>Welcome, {{ user.get_full_name|default:user.username }}</span>
+                            <form id="logout-form" action="{% url 'logout' %}" method="post" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-danger ms-2"><i class="fas fa-sign-out-alt me-1"></i>Logout</button>
+                            </form>
+                        {% endif %}
+                    {% else %}
+                        <span>Welcome, {{ user.get_full_name|default:user.username }}</span>
+                    {% endif %}
+                {% endif %}
+                <button id="dark-mode-toggle" class="btn btn-outline-primary ms-3"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+        <div class="container-fluid">
+            {% block content %}
+            {% endblock %}
+        </div>
+    </div>
+
+    {% if user.is_authenticated and portal_type == 'coach' %}
+        {% include "management/coach_identity_modal.html" %}
+    {% endif %}
+
+    {% bootstrap_javascript %}
+    <script>
+        // Lucide Icons Initialization
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Staff Sidebar Logic
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const mainContent = document.getElementById('main-content');
+
+        if (sidebarToggle) {
+            sidebarToggle.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sidebar.classList.toggle('active');
+            });
+        }
+
+        // Athlete drawer (same behavior as athlete_dashboard.html)
+        const athleteBurgerMenu = document.getElementById('athleteBurgerMenu');
+        const athleteSideDrawer = document.getElementById('athleteSideDrawer');
+        const athleteDrawerBackdrop = document.getElementById('athleteDrawerBackdrop');
+        const athleteDrawerContent = document.getElementById('athleteDrawerContent');
+        const closeAthleteDrawer = document.getElementById('closeAthleteDrawer');
+
+        if (athleteBurgerMenu && athleteSideDrawer && athleteDrawerBackdrop && athleteDrawerContent) {
+            function openAthleteMenu() {
+                athleteSideDrawer.classList.remove('invisible');
+                athleteSideDrawer.setAttribute('aria-hidden', 'false');
+                athleteBurgerMenu.setAttribute('aria-expanded', 'true');
+                setTimeout(() => {
+                    athleteDrawerBackdrop.classList.replace('opacity-0', 'opacity-100');
+                    athleteDrawerContent.classList.replace('-translate-x-full', 'translate-x-0');
+                }, 10);
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    if (closeAthleteDrawer) closeAthleteDrawer.focus();
+                }, 320);
+            }
+
+            function closeAthleteMenu() {
+                athleteDrawerBackdrop.classList.replace('opacity-100', 'opacity-0');
+                athleteDrawerContent.classList.replace('translate-x-0', '-translate-x-full');
+                athleteSideDrawer.setAttribute('aria-hidden', 'true');
+                athleteBurgerMenu.setAttribute('aria-expanded', 'false');
+                setTimeout(() => {
+                    athleteSideDrawer.classList.add('invisible');
+                }, 300);
+            }
+
+            athleteBurgerMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openAthleteMenu();
+            });
+            if (closeAthleteDrawer) closeAthleteDrawer.addEventListener('click', closeAthleteMenu);
+            athleteDrawerBackdrop.addEventListener('click', closeAthleteMenu);
+
+            document.querySelectorAll('[data-drawer-nav]').forEach((a) => {
+                a.addEventListener('click', closeAthleteMenu);
+            });
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (!athleteSideDrawer.classList.contains('invisible')) {
+                    closeAthleteMenu();
+                    athleteBurgerMenu.focus();
+                    e.preventDefault();
+                }
+            });
+        }
+
+        // Click outside to close sidebars
+        if (mainContent) {
+            mainContent.addEventListener('click', () => {
+                if (sidebar && sidebar.classList.contains('active')) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        }
+
+        const darkModeToggle = document.getElementById('dark-mode-toggle');
+        const body = document.body;
+        const html = document.documentElement;
+
+        function updateThemeUI() {
+            const isDark = localStorage.getItem('darkMode') === 'enabled';
+            if (isDark) {
+                body.classList.add('dark-mode');
+                html.classList.add('dark');
+                if (darkModeToggle) {
+                    const icon = darkModeToggle.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-sun';
+                    }
+                }
+            } else {
+                body.classList.remove('dark-mode');
+                html.classList.remove('dark');
+                if (darkModeToggle) {
+                    const icon = darkModeToggle.querySelector('i');
+                    if (icon) {
+                        icon.className = 'fas fa-moon';
+                    }
+                }
+            }
+        }
+
+        // Initialize UI
+        updateThemeUI();
+
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('click', () => {
+                const current = localStorage.getItem('darkMode');
+                if (current === 'enabled') {
+                    localStorage.setItem('darkMode', 'disabled');
+                } else {
+                    localStorage.setItem('darkMode', 'enabled');
+                }
+                updateThemeUI();
+            });
+        }
+    </script>
+</body>
+</html>

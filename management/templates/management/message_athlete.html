@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4 mb-5 coach-messages-app">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3 flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-3">
+            <div>
+                <h3 class="fw-bold text-primary mb-0"><i class="fas fa-comments me-2"></i>Athlete Messages</h3>
+                <p class="text-muted mb-0 small">Two-way chat with your roster. Red dot = unread from that athlete.</p>
+            </div>
+            {% if coach_unread_messages_count %}
+            <span class="badge rounded-pill bg-danger position-relative coach-msg-badge-pulse" title="Unread messages">
+                {{ coach_unread_messages_count }} new
+            </span>
+            {% endif %}
+        </div>
+        <div>
+            <a href="{% url 'management:needs_attention' %}" class="btn btn-outline-danger rounded-pill me-2"><i class="fas fa-exclamation-triangle me-2"></i>Needs Attention</a>
+            <a href="{% url 'management:dashboard' %}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <!-- Thread list -->
+        <div class="col-lg-4 col-xl-3">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="min-height: 420px; max-height: 72vh;">
+                <div class="card-header bg-white border-0 pt-3 px-3 pb-0">
+                    <h6 class="fw-bold mb-0">Conversations</h6>
+                    <p class="text-muted smallest mb-2">Select an athlete to read and reply</p>
+                </div>
+                <div class="list-group list-group-flush overflow-auto flex-grow-1 custom-thread-scroll">
+                    {% for row in athlete_threads %}
+                    {% with a=row.athlete %}
+                    <a href="{% url 'management:message_athlete' %}?thread={{ a.id }}"
+                       class="list-group-item list-group-item-action border-0 border-bottom py-3 px-3 thread-row {% if selected_athlete and selected_athlete.id == a.id %}thread-row-selected{% endif %}">
+                        <div class="d-flex align-items-start gap-2">
+                            <div class="position-relative flex-shrink-0">
+                                {% if a.profile_picture %}
+                                <img src="{{ a.profile_picture.url }}" alt="" class="rounded-circle border" style="width:44px;height:44px;object-fit:cover;">
+                                {% else %}
+                                <div class="rounded-circle bg-light border d-flex align-items-center justify-content-center text-secondary" style="width:44px;height:44px;">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                {% endif %}
+                                {% if row.unread %}
+                                <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle coach-unread-dot" title="{{ row.unread }} unread">
+                                    <span class="visually-hidden">Unread</span>
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex justify-content-between align-items-center gap-1">
+                                    <span class="fw-bold text-truncate small">{{ a.user.get_full_name|default:a.user.username }}</span>
+                                    {% if row.last_at %}
+                                    <span class="text-nowrap smallest text-muted">{{ row.last_at|date:"M j" }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if row.unread %}
+                                <span class="badge bg-danger bg-opacity-90 smallest mt-1">{{ row.unread }} unread</span>
+                                {% endif %}
+                                {% if row.last_preview %}
+                                <p class="mb-0 mt-1 small text-truncate text-muted">{{ row.last_preview }}</p>
+                                {% else %}
+                                <p class="mb-0 mt-1 small fst-italic text-muted opacity-75">No messages yet</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endwith %}
+                    {% empty %}
+                    <div class="text-center py-5 px-3 text-muted">
+                        <i class="fas fa-users fa-2x mb-2 opacity-25"></i>
+                        <p class="small mb-0">No athletes in your roster.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat panel -->
+        <div class="col-lg-8 col-xl-9">
+            <div class="card border-0 shadow-sm rounded-4 d-flex flex-column" style="min-height: 420px; max-height: 72vh;">
+                {% if selected_athlete %}
+                <div class="card-header bg-primary text-white border-0 py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        {% if selected_athlete.profile_picture %}
+                        <img src="{{ selected_athlete.profile_picture.url }}" alt="" class="rounded-3 border border-white border-2" style="width:48px;height:48px;object-fit:cover;">
+                        {% else %}
+                        <div class="rounded-3 bg-white bg-opacity-25 d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <h5 class="fw-bold mb-0">{{ selected_athlete.user.get_full_name|default:selected_athlete.user.username }}</h5>
+                            <span class="small opacity-75">@{{ selected_athlete.user.username }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body flex-grow-1 overflow-auto bg-light p-4" id="coachChatThreadScroll">
+                    {% for msg in thread_messages %}
+                    {% if msg.sender_id == request.user.id %}
+                    <div class="d-flex justify-content-end mb-3">
+                        <div class="bg-primary text-white rounded-4 rounded-end-0 px-3 py-2 shadow-sm" style="max-width: 85%;">
+                            <p class="mb-0 small">{{ msg.content|linebreaksbr }}</p>
+                            <div class="text-end smallest opacity-75 mt-1">{{ msg.timestamp|date:"M j, g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="d-flex justify-content-start mb-3">
+                        <div class="bg-white border rounded-4 rounded-start-0 px-3 py-2 shadow-sm" style="max-width: 85%;">
+                            <p class="mb-0 small text-dark">{{ msg.content|linebreaksbr }}</p>
+                            <div class="text-muted smallest mt-1">{{ msg.timestamp|date:"M j, g:i A" }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% empty %}
+                    <div class="text-center text-muted py-5">
+                        <i class="fas fa-paper-plane fa-2x mb-3 opacity-25"></i>
+                        <p class="mb-0">Start the conversation below.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="card-footer bg-white border-0 border-top p-3">
+                    <form action="{% url 'management:message_athlete' %}" method="post" class="d-flex flex-column gap-2">
+                        {% csrf_token %}
+                        <input type="hidden" name="athlete_id" value="{{ selected_athlete.id }}">
+                        <label class="form-label small fw-bold text-muted mb-0">Reply</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <textarea name="message_content" class="form-control rounded-3 flex-grow-1" rows="2" placeholder="Type your message…" required></textarea>
+                            <button type="submit" class="btn btn-primary fw-bold rounded-3 px-4 align-self-end"><i class="fas fa-paper-plane me-2"></i>Send</button>
+                        </div>
+                    </form>
+                </div>
+                {% else %}
+                <div class="card-body d-flex flex-column align-items-center justify-content-center text-center text-muted flex-grow-1 py-5">
+                    <i class="fas fa-arrow-left fa-2x mb-3 opacity-25 d-none d-lg-block"></i>
+                    <i class="fas fa-comments fa-3x mb-3 opacity-25"></i>
+                    <h5 class="fw-bold text-secondary">Choose an athlete</h5>
+                    <p class="small mb-0 px-4" style="max-width: 360px;">Pick someone from the list to see the full thread and reply. Unread messages show a <span class="text-danger fw-bold">red dot</span> next to their name.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .coach-messages-app .thread-row-selected {
+        background-color: rgba(13, 110, 253, 0.1);
+        border-left: 4px solid #0d6efd !important;
+    }
+    .custom-thread-scroll { max-height: calc(72vh - 80px); }
+    .coach-unread-dot { min-width: 0.65rem; min-height: 0.65rem; }
+    @keyframes coachMsgPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.5); }
+        50% { box-shadow: 0 0 0 6px rgba(220, 53, 69, 0); }
+    }
+    .coach-msg-badge-pulse {
+        animation: coachMsgPulse 2s ease-in-out infinite;
+    }
+    .smallest { font-size: 0.7rem; }
+</style>
+<script>
+    (function () {
+        var el = document.getElementById('coachChatThreadScroll');
+        if (el) el.scrollTop = el.scrollHeight;
+    })();
+</script>
+{% endblock %}

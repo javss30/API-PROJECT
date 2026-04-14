@@ -1,0 +1,529 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="compliance-wrap px-3 px-md-4 py-4" style="background-color: #f7f9fc; min-height: calc(100vh - 80px);">
+    <section
+        id="complianceDashboard"
+        class="compliance-shell max-w-7xl mx-auto"
+        data-mark-url="{% url 'management:mark_attendance' %}"
+        data-message-url="{% url 'management:message_athlete' %}"
+        data-incident-url="{% url 'management:log_incident' %}"
+        data-dashboard-url="{% url 'management:dashboard' %}"
+        data-progress-url="{% url 'management:monitor_progress' %}"
+        data-critical-threshold="{{ critical_threshold|default:10 }}"
+        style="max-width: 1200px;"
+    >
+        <header class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            <div>
+                <div class="text-primary text-uppercase fw-bold mb-1 d-flex align-items-center" style="font-size: 11px; letter-spacing: 1px;">
+                    <i class="far fa-calendar-alt me-2 text-primary" style="font-size: 14px; background: #eef2ff; padding: 4px; border-radius: 4px;"></i> 
+                    SEASON 2024 - TRAINING PHASE 1
+                </div>
+                <h1 class="m-0 text-uppercase fst-italic fw-black" style="font-size: 2.2rem; color: #0a1128; font-weight: 900; letter-spacing: -0.5px;">Compliance Dashboard</h1>
+            </div>
+            <div class="d-flex gap-2 align-items-center position-relative">
+                <div id="notifPanel" class="position-absolute end-0 top-100 mt-2 bg-white shadow-lg rounded-4 p-3 d-none border border-light-subtle" style="width: 320px; z-index: 100;"></div>
+                <div class="search-wrap position-relative">
+                    <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                    <input id="rosterSearch" type="text" class="form-control rounded-pill bg-white border-light-subtle ps-5" placeholder="Search roster..." style="width: 250px; font-size: 14px; height: 42px;" />
+                </div>
+                <button id="notifToggle" class="btn btn-white bg-white border-light-subtle rounded-circle position-relative p-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 42px; height: 42px;">
+                    <i class="far fa-bell text-muted" style="font-size: 18px;"></i>
+                    <span id="notifCount" class="position-absolute badge rounded-pill bg-danger d-none" style="top: -2px; right: -2px; font-size: 10px; padding: 4px 6px; border: 2px solid white;">0</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 0.5px;">Active Roster</div>
+                        <h2 id="activeRosterCount" class="fw-black m-0" style="color: #0a1128; font-size: 2rem; font-weight: 900;">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 0.5px;">Critical Status</div>
+                        <h2 id="criticalCount" class="fw-black m-0 text-danger" style="font-size: 2rem; font-weight: 900;">0</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 0.5px;">Team Avg</div>
+                        <h2 id="teamAvg" class="fw-black m-0" style="color: #00b07a; font-size: 2rem; font-weight: 900;">0%</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card h-100 border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important;">
+                    <div class="card-body p-3 p-md-4">
+                        <div class="text-uppercase text-muted fw-bold mb-2" style="font-size: 10px; letter-spacing: 0.5px;">Missed Today</div>
+                        <h2 id="missedToday" class="fw-black m-0 text-secondary" style="font-size: 2rem; font-weight: 900;">0</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="text-uppercase fw-bold m-0" style="font-size: 14px; color: #0a1128;">Daily Attendance</h5>
+                    <button id="markAllPresentBtn" class="btn btn-sm btn-outline-primary rounded-pill text-uppercase fw-bold px-3 py-1" style="font-size: 11px; letter-spacing: 0.5px;">Mark All Present</button>
+                </div>
+                <div class="card border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important; max-height: 600px; overflow-y: auto;">
+                    <div id="rosterList" class="card-body p-0">
+                        <!-- roster rows generated dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card border-0 rounded-4 mb-4" style="background-color: #0f172a; color: #fff; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);">
+                    <div class="card-body p-4">
+                        <div class="d-flex align-items-center mb-4">
+                            <i class="fas fa-history text-primary me-2" style="font-size: 14px;"></i>
+                            <h6 class="text-uppercase fw-bold m-0 text-white" style="font-size: 11px; letter-spacing: 1px;">Recent Activity</h6>
+                        </div>
+                        <div id="activityLog" class="mb-4" style="font-size: 12px; color: #94a3b8; min-height: 80px; max-height: 200px; overflow-y: auto;">
+                            <!-- Activity generated dynamically -->
+                        </div>
+                        <button id="exportLogBtn" class="btn w-100 rounded-pill text-uppercase fw-bold" style="font-size: 11px; color: #e2e8f0; border: 1.5px solid rgba(255,255,255,0.15); background: transparent; padding: 10px 0;">Export Log</button>
+                    </div>
+                </div>
+
+                <div id="interventionCard" class="card border-0 rounded-4 d-none shadow-sm" style="background: linear-gradient(135deg, #ff4d4d 0%, #ff3333 100%); color: #fff; cursor: pointer; position: relative; overflow: hidden;">
+                     <!-- populated via js -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Student Information List -->
+        <div class="row g-4 mt-2 mb-4">
+            <div class="col-12">
+                <div class="card border-0 rounded-4 bg-white" style="box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.05) !important;">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                            <h5 class="text-uppercase fw-bold m-0" style="font-size: 15px; color: #0a1128;">
+                                <i class="fas fa-address-book me-2 text-primary" style="opacity: 0.8;"></i> Team Roster Information
+                            </h5>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0 border-top mt-2" style="font-size: 13px;">
+                                <thead style="background-color: #f8fafc; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                    <tr>
+                                        <th class="border-0 rounded-start-3 py-3 px-4">Athlete / Name</th>
+                                        <th class="border-0 py-3 px-3">Position & Jersey</th>
+                                        <th class="border-0 py-3 px-3">Grade / Status</th>
+                                        <th class="border-0 py-3 px-3">Contact Details</th>
+                                        <th class="border-0 rounded-end-3 py-3 px-4 text-end">Quick Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="studentListTableBody">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+{{ roster_json|json_script:"initial-roster-data" }}
+
+<style>
+    /* Styling adjustments specifically to match image closely */
+    .fw-black { font-weight: 900 !important; }
+    .action-btn { width: 36px; height: 36px; display: inline-flex; justify-content: center; align-items: center; background: white; border: 1.5px solid #e1e8f0; border-radius: 10px; color: #a0aec0; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding: 0;}
+    .action-btn:hover { border-color: #cbd5e1; color: #475569; background: #f8fafc; }
+    
+    .progress-bar-container { height: 4px; width: 60%; max-width: 280px; background: #f1f5f9; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .progress-bar-fill { height: 100%; border-radius: 4px; }
+    .progress-bar-fill.bg-danger { background: #ef4444 !important; }
+    .progress-bar-fill.bg-primary { background: #4f46e5 !important; } /* Using a bright blue-purple representing primary */
+    
+    .athlete-row { transition: background 0.15s ease; border-bottom: 1px solid #f1f5f9; }
+    .athlete-row:last-child { border-bottom: none; }
+    .athlete-row:hover { background-color: #f8fafc; }
+    
+    /* Scrollbar styling for lists */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<script>
+    (function () {
+        "use strict";
+        const root = document.getElementById("complianceDashboard");
+        if (!root) return;
+
+        const markUrl = root.dataset.markUrl || "";
+        const messageUrl = root.dataset.messageUrl || "";
+        const incidentUrl = root.dataset.incidentUrl || "";
+        const dashboardUrl = root.dataset.dashboardUrl || "/";
+        const progressUrl = root.dataset.progressUrl || "";
+        const criticalLimit = Number(root.dataset.criticalThreshold || 10);
+        let roster = JSON.parse(document.getElementById("initial-roster-data")?.textContent || "[]");
+        let activity = [];
+        let notifications = [];
+        let searchTerm = "";
+        let missedTodayCount = 0;
+
+        const els = {
+            notifToggle: document.getElementById("notifToggle"),
+            notifPanel: document.getElementById("notifPanel"),
+            notifCount: document.getElementById("notifCount"),
+            rosterSearch: document.getElementById("rosterSearch"),
+            markAllPresentBtn: document.getElementById("markAllPresentBtn"),
+            rosterList: document.getElementById("rosterList"),
+            activeRosterCount: document.getElementById("activeRosterCount"),
+            criticalCount: document.getElementById("criticalCount"),
+            teamAvg: document.getElementById("teamAvg"),
+            missedToday: document.getElementById("missedToday"),
+            activityLog: document.getElementById("activityLog"),
+            exportLogBtn: document.getElementById("exportLogBtn"),
+            interventionCard: document.getElementById("interventionCard"),
+            studentListTableBody: document.getElementById("studentListTableBody"),
+        };
+
+        function getCookie(name) {
+            const value = "; " + document.cookie;
+            const parts = value.split("; " + name + "=");
+            if (parts.length === 2) return parts.pop().split(";").shift();
+            return "";
+        }
+
+        function esc(value) {
+            const div = document.createElement("div");
+            div.textContent = value == null ? "" : String(value);
+            return div.innerHTML;
+        }
+
+        function nowTime() {
+            return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        }
+
+        function attendancePct(a) {
+            if (!a.totalSessions) return 100;
+            return Math.max(0, Math.round(((a.totalSessions - a.missedSessions) / a.totalSessions) * 100));
+        }
+
+        function filteredRoster() {
+            return roster.filter((a) => {
+                const nameHit = (a.name || "").toLowerCase().includes(searchTerm) || (a.username || "").toLowerCase().includes(searchTerm);
+                return nameHit;
+            });
+        }
+
+        function stats() {
+            const totalSessions = roster.reduce((sum, a) => sum + a.totalSessions, 0);
+            const presentSessions = roster.reduce((sum, a) => sum + Math.max(0, a.totalSessions - a.missedSessions), 0);
+            return {
+                activeRoster: roster.length,
+                criticalCount: roster.filter((a) => a.missedSessions >= criticalLimit).length,
+                teamAvg: totalSessions ? ((presentSessions / totalSessions) * 100).toFixed(1) : "100.0",
+            };
+        }
+
+        function renderStats() {
+            const s = stats();
+            els.activeRosterCount.textContent = s.activeRoster;
+            els.criticalCount.textContent = s.criticalCount;
+            els.teamAvg.textContent = s.teamAvg + "%";
+            els.missedToday.textContent = missedTodayCount;
+        }
+
+        function renderNotifications() {
+            els.notifCount.textContent = notifications.length;
+            els.notifCount.classList.toggle("d-none", notifications.length === 0);
+            if (!notifications.length) {
+                els.notifPanel.innerHTML = "<div class='text-muted small'>No new notifications.</div>";
+                return;
+            }
+            els.notifPanel.innerHTML = "<h6 class='fw-bold mb-3'>Notifications</h6>" + notifications.slice(0, 5).map((n) => (
+                "<div class='mb-2 small border-bottom pb-2'><i class='fas fa-exclamation-circle text-danger me-2'></i>" + esc(n.text) +
+                " <div class='text-muted mt-1 ms-4' style='font-size: 10px;'>" + esc(n.time) + "</div></div>"
+            )).join("");
+        }
+
+        function renderActivity() {
+            if (!activity.length) {
+                els.activityLog.innerHTML = "<div class='fst-italic'>No activity logged today</div>";
+                return;
+            }
+            els.activityLog.innerHTML = activity.map((a) => (
+                "<div class='d-flex justify-content-between mb-3'>" +
+                    "<span>" + esc(a.text) + "</span>" +
+                    "<span style='opacity: 0.6;'>" + esc(a.time) + "</span>" +
+                "</div>"
+            )).join("");
+        }
+
+        function renderIntervention() {
+            const badAthletes = roster.filter((a) => a.missedSessions >= criticalLimit);
+            const worst = badAthletes.sort((x, y) => y.missedSessions - x.missedSessions)[0];
+            
+            if (!worst) {
+                els.interventionCard.classList.add("d-none");
+                els.interventionCard.innerHTML = "";
+                return;
+            }
+            els.interventionCard.classList.remove("d-none");
+            els.interventionCard.innerHTML = `
+                <i class="fas fa-exclamation-triangle position-absolute text-white" style="font-size: 120px; opacity: 0.1; right: -20px; bottom: -10px; transform: rotate(-15deg);"></i>
+                <div class="card-body p-4 position-relative">
+                    <h3 class="fst-italic fw-black m-0 mb-1 text-uppercase" style="font-size: 22px;">Intervention Needed</h3>
+                    <div class="text-uppercase fw-bold mb-4" style="font-size: 10px; letter-spacing: 0.5px;">${badAthletes.length} athlete(s) below threshold</div>
+                    <div class="d-flex justify-content-between align-items-center bg-white bg-opacity-25 rounded-pill px-3 py-2 shadow-sm" style="backdrop-filter: blur(4px);">
+                        <span class="fw-bold" style="font-size: 13px;">${esc(worst.name)}</span>
+                        <span class="badge bg-white text-danger rounded-pill fw-bold py-1 px-2" style="font-size: 10px;">${worst.missedSessions} Missed</span>
+                    </div>
+                </div>
+            `;
+            els.interventionCard.onclick = function () {
+                window.location.href = incidentUrl + "?preselect=" + encodeURIComponent(worst.id);
+            };
+        }
+
+        function renderRoster() {
+            const list = filteredRoster();
+            if (!list.length) {
+                els.rosterList.innerHTML = "<div class='p-4 text-muted small text-center'>No athletes match search.</div>";
+                els.studentListTableBody.innerHTML = "<tr><td colspan='5' class='text-center py-4 text-muted'>No athletes match search.</td></tr>";
+                return;
+            }
+
+            // Render right-side list
+            els.rosterList.innerHTML = list.map((a) => {
+                const pct = attendancePct(a);
+                const critical = a.missedSessions >= criticalLimit;
+                
+                const avatarIcon = critical ? `<span class="position-absolute badge rounded-pill bg-danger border border-white" style="padding: 4px; top: -3px; right: -3px; box-shadow: 0 0 0 2px white;"><i class="fas fa-exclamation text-white" style="font-size: 8px;"></i></span>` : '';
+                const standingText = critical ? `<span class="text-danger">Needs Attention</span>` : `<span class="text-success" style="color: #059669 !important;">Good Standing</span>`;
+                const progressColor = critical ? 'bg-danger' : 'bg-primary';
+
+                return `
+                    <div class="athlete-row p-3 p-md-4 d-flex align-items-center position-relative" data-athlete-id="${esc(a.id)}">
+                        <div class="position-relative me-3 flex-shrink-0" style="width: 50px; height: 50px;">
+                            <img src="${esc(a.imageUrl)}" alt="${esc(a.name)}" class="rounded-circle bg-light border border-light-subtle w-100 h-100" style="object-fit: cover;" onerror="this.src='/static/images/default-avatar.png';">
+                            ${avatarIcon}
+                        </div>
+                        <div class="flex-grow-1">
+                            <a href="${esc(progressUrl)}?athlete_id=${esc(a.id)}" class="fw-bold text-dark text-decoration-none d-block mb-1" style="font-size: 15px; color: #0f172a !important;">${esc(a.name)}</a>
+                            <div class="d-flex align-items-center text-uppercase fw-bold mb-1" style="font-size: 10px; letter-spacing: 0.3px;">
+                                ${standingText}
+                                <span class="ms-2 text-muted" style="color: #64748b !important;">${pct}% Rate - ${a.missedSessions} Missed</span>
+                            </div>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar-fill ${progressColor}" style="width: ${pct}%;"></div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center ms-3">
+                            <button type="button" data-action="present" class="action-btn" title="Mark Present">
+                                <i class="fas fa-user-check"></i>
+                            </button>
+                            <button type="button" data-action="absent" class="action-btn" title="Mark Absent">
+                                <i class="fas fa-user-times"></i>
+                            </button>
+                            <div class="position-relative">
+                                <button type="button" data-action="more" class="action-btn" title="More Options">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu position-absolute end-0 mt-1 shadow-sm border-0 d-none" style="z-index: 10; min-width: 160px; top: 100%; right: 0;">
+                                    <a class="dropdown-item" href="${esc(progressUrl)}?athlete_id=${esc(a.id)}"><i class="fas fa-chart-line me-2 text-muted"></i>View Stats</a>
+                                    <a class="dropdown-item" href="${esc(messageUrl)}?preselect=${esc(a.id)}"><i class="fas fa-comment-alt me-2 text-muted"></i>Message</a>
+                                    <a class="dropdown-item text-danger" href="${esc(incidentUrl)}?preselect=${esc(a.id)}"><i class="fas fa-exclamation-circle me-2"></i>Log Incident</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join("");
+
+            // Render Student Information Table
+            els.studentListTableBody.innerHTML = list.map((a) => {
+                const badgeClass = a.grade === 'Active' ? 'bg-success bg-opacity-10 text-success' : 'bg-primary bg-opacity-10 text-primary';
+                return `
+                    <tr>
+                        <td class="px-4 py-3">
+                            <div class="d-flex align-items-center">
+                                <img src="${esc(a.imageUrl)}" alt="${esc(a.name)}" class="rounded-circle me-3" style="width: 36px; height: 36px; object-fit: cover; border: 1px solid #e2e8f0;" onerror="this.src='/static/images/default-avatar.png';">
+                                <div>
+                                    <span class="fw-bold d-block text-dark" style="font-size: 14px;">${esc(a.name)}</span>
+                                    <span class="text-muted" style="font-size: 11px;">${esc(a.username)}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-3">
+                            <div class="fw-bold text-dark">${esc(a.position || 'Player')}</div>
+                            <div class="text-muted" style="font-size: 11px;">Jersey: ${esc(a.jersey || '--')}</div>
+                        </td>
+                        <td class="px-3">
+                            <span class="badge ${badgeClass} rounded-pill px-2 py-1">${esc(a.grade || 'Unknown')}</span>
+                        </td>
+                        <td class="px-3">
+                            <div class="text-dark"><i class="fas fa-phone-alt text-muted me-2" style="font-size: 10px;"></i>${esc(a.contact || 'Not Provided')}</div>
+                        </td>
+                        <td class="text-end px-4">
+                            <a href="${esc(progressUrl)}?athlete_id=${esc(a.id)}" class="btn btn-sm btn-light rounded-pill px-3 py-1 shadow-sm" style="font-size: 11px; font-weight: 700; border: 1px solid #e2e8f0; color: #475569;">
+                                View Profile
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }).join("");
+        }
+
+        function renderAll() {
+            renderStats();
+            renderNotifications();
+            renderActivity();
+            renderIntervention();
+            renderRoster();
+        }
+
+        async function persistAttendance(athleteId, status) {
+            const fd = new FormData();
+            fd.append("athlete_id", String(athleteId));
+            fd.append("status", status);
+            const res = await fetch(markUrl, {
+                method: "POST",
+                headers: { "X-CSRFToken": getCookie("csrftoken") },
+                body: fd
+            });
+            if (!res.ok) return;
+            const data = await res.json();
+            if (!data.success) return;
+            roster = roster.map((a) => {
+                if (a.id !== athleteId) return a;
+                return {
+                    ...a,
+                    totalSessions: Number(data.total_sessions || a.totalSessions),
+                    missedSessions: Number(data.missed_sessions || a.missedSessions)
+                };
+            });
+        }
+
+        async function markAttendance(athleteId, status) {
+            const athlete = roster.find((a) => a.id === athleteId);
+            if (!athlete) return;
+            const beforeCritical = athlete.missedSessions >= criticalLimit;
+            roster = roster.map((a) => {
+                if (a.id !== athleteId) return a;
+                const next = { ...a, totalSessions: a.totalSessions + 1 };
+                if (status === "absent") next.missedSessions = a.missedSessions + 1;
+                return next;
+            });
+            if (status === "absent") missedTodayCount += 1;
+            activity = [{ text: athlete.name + " marked " + status.toUpperCase(), time: nowTime() }].concat(activity).slice(0, 18);
+            const after = roster.find((a) => a.id === athleteId);
+            if (!beforeCritical && after && after.missedSessions >= criticalLimit) {
+                notifications = [{ text: athlete.name + " reached CRITICAL threshold", time: nowTime() }].concat(notifications);
+            }
+            renderAll();
+            try {
+                await persistAttendance(athleteId, status);
+            } catch (err) {
+                console.warn("Could not persist attendance", err);
+            }
+            renderAll();
+        }
+
+        function exportActivity() {
+            const rows = activity.length ? activity : [{ text: "No attendance marks yet", time: nowTime() }];
+            const text = rows.map((r) => "[" + r.time + "] " + r.text).join("\n");
+            const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "compliance-activity-log.txt";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+        }
+
+        els.notifToggle.addEventListener("click", function (e) {
+            e.stopPropagation();
+            els.notifPanel.classList.toggle("d-none");
+        });
+        
+        document.addEventListener("click", function () {
+            els.notifPanel.classList.add("d-none");
+            root.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('d-none'));
+        });
+
+        els.notifPanel.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+
+        els.rosterSearch.addEventListener("input", function (e) {
+            searchTerm = (e.target.value || "").trim().toLowerCase();
+            renderRoster();
+        });
+        
+        els.markAllPresentBtn.addEventListener("click", async function () {
+            const list = filteredRoster();
+            const originalText = els.markAllPresentBtn.innerHTML;
+            els.markAllPresentBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Updating...';
+            els.markAllPresentBtn.disabled = true;
+            
+            for (const athlete of list) {
+                await markAttendance(athlete.id, "present");
+            }
+            
+            setTimeout(() => {
+                els.markAllPresentBtn.innerHTML = originalText;
+                els.markAllPresentBtn.disabled = false;
+            }, 500);
+        });
+        
+        els.exportLogBtn.addEventListener("click", exportActivity);
+
+        els.rosterList.addEventListener("click", async function (e) {
+            const row = e.target.closest(".athlete-row");
+            if (!row) return;
+            const athleteId = Number(row.dataset.athleteId);
+            const actionBtn = e.target.closest("button");
+            
+            if (!actionBtn) return;
+            const action = actionBtn.dataset.action;
+            if (!action) return;
+
+            e.stopPropagation();
+
+            if (action === "present" || action === "absent") {
+                // Add a small visual feedback animation to the button
+                actionBtn.style.transform = 'scale(0.9)';
+                setTimeout(() => actionBtn.style.transform = 'scale(1)', 150);
+                await markAttendance(athleteId, action);
+                return;
+            }
+
+            if (action === "more") {
+                const parent = actionBtn.closest('.position-relative');
+                const menu = parent.querySelector('.dropdown-menu');
+                
+                // close other open menus
+                root.querySelectorAll('.dropdown-menu').forEach(m => {
+                    if (m !== menu) m.classList.add('d-none');
+                });
+                
+                if (menu) menu.classList.toggle("d-none");
+                return;
+            }
+        });
+
+        renderAll();
+    })();
+</script>
+{% endblock %}

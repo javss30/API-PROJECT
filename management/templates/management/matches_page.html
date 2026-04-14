@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEC Dragons Matches</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #070504;
+            --bg-soft: #0d0907;
+            --row: rgba(26, 16, 12, 0.78);
+            --row-soft: rgba(14, 10, 8, 0.94);
+            --line: rgba(255, 123, 18, 0.22);
+            --ember: #ff7b12;
+            --copy: rgba(255, 237, 220, 0.82);
+            --copy-soft: rgba(255, 222, 196, 0.5);
+            --win: #2dd36f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #fff;
+            background:
+                radial-gradient(circle at 50% 0%, rgba(255, 123, 18, 0.06), transparent 22%),
+                linear-gradient(180deg, var(--bg) 0%, #0a0705 100%);
+        }
+
+        .matches-page {
+            min-height: 100vh;
+        }
+
+        .shell {
+            width: min(1240px, calc(100% - 40px));
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 22px;
+            padding: 24px 0 30px;
+        }
+
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: clamp(18px, 2.5vw, 40px);
+        }
+
+        .nav-group.right {
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            position: relative;
+            color: rgba(255,255,255,0.68);
+            text-decoration: none;
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            transition: color 180ms ease;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            color: #fff;
+        }
+
+        .nav-link.active::after,
+        .nav-link:hover::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -10px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--ember), transparent);
+        }
+
+        .brand {
+            text-align: center;
+            text-transform: uppercase;
+            font-size: clamp(1.3rem, 2.4vw, 2.3rem);
+            font-weight: 1000;
+            letter-spacing: 0.22em;
+            color: var(--ember);
+        }
+
+        .page-wrap {
+            padding: 42px 0 90px;
+        }
+
+        .eyebrow {
+            margin: 0 0 14px;
+            color: var(--ember);
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.34em;
+            text-transform: uppercase;
+        }
+
+        .page-title {
+            margin: 0 0 42px;
+            font-size: clamp(2.8rem, 5vw, 4.4rem);
+            line-height: 0.98;
+            font-weight: 1000;
+            letter-spacing: -0.05em;
+        }
+
+        .schedule-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .match-row {
+            position: relative;
+            display: grid;
+            grid-template-columns: 110px minmax(0, 1.6fr) minmax(250px, 1fr);
+            align-items: center;
+            gap: 20px;
+            min-height: 70px;
+            padding: 0 18px 0 16px;
+            border-left: 2px solid rgba(255,255,255,0.14);
+            background: linear-gradient(180deg, var(--row-soft), rgba(10, 7, 5, 0.98));
+            transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+        }
+
+        .match-row.featured {
+            background: linear-gradient(180deg, rgba(32, 20, 15, 0.9), rgba(18, 12, 9, 0.98));
+            border-left-color: var(--ember);
+        }
+
+        .match-row:hover {
+            transform: translateX(6px);
+            border-left-color: var(--ember);
+            background: linear-gradient(180deg, rgba(30, 18, 13, 0.96), rgba(15, 10, 7, 0.99));
+        }
+
+        .match-date {
+            color: rgba(206, 187, 171, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .match-teams {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: clamp(1.1rem, 2vw, 1.8rem);
+            letter-spacing: -0.03em;
+        }
+
+        .team-home {
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .team-vs {
+            color: rgba(255,255,255,0.22);
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .team-away {
+            color: rgba(255, 232, 214, 0.78);
+        }
+
+        .match-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+            color: var(--copy-soft);
+            font-size: 0.8rem;
+        }
+
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .meta-chip i {
+            color: var(--ember);
+            font-size: 0.74rem;
+        }
+
+        .status {
+            font-size: 0.78rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+
+        .status.next {
+            color: var(--ember);
+        }
+
+        .status.win {
+            color: var(--win);
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 650ms ease, transform 650ms ease;
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @media (max-width: 900px) {
+            .match-row {
+                grid-template-columns: 1fr;
+                align-items: start;
+                gap: 12px;
+                padding: 16px;
+            }
+
+            .match-meta {
+                justify-content: flex-start;
+            }
+        }
+
+        @media (max-width: 760px) {
+            .shell {
+                width: min(100% - 24px, 1240px);
+            }
+
+            .topbar {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                gap: 16px;
+            }
+
+            .nav-group,
+            .nav-group.right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .page-wrap {
+                padding-top: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="matches-page">
+        <div class="shell">
+            <header class="topbar">
+                <nav class="nav-group">
+                    <a class="nav-link" href="{% url 'home' %}">News</a>
+                    <a class="nav-link" href="{% url 'about_page' %}">About</a>
+                </nav>
+
+                <div class="brand">CEC Dragons</div>
+
+                <nav class="nav-group right">
+                    <a class="nav-link" href="{% url 'players_page' %}">Players</a>
+                    <a class="nav-link active" href="{% url 'matches_page' %}">Matches</a>
+                </nav>
+            </header>
+
+            <section class="page-wrap">
+                <p class="eyebrow reveal is-visible">Season Schedule</p>
+                <h1 class="page-title reveal is-visible">Upcoming matches</h1>
+
+                <div class="schedule-list">
+                    {% for match in matches %}
+                    <article class="match-row reveal {% if match.is_featured %}featured{% endif %}">
+                        <div class="match-date">{{ match.date }}</div>
+
+                        <div class="match-teams">
+                            <span class="team-home">Dragons</span>
+                            <span class="team-vs">vs</span>
+                            <span class="team-away">{{ match.opponent }}</span>
+                        </div>
+
+                        <div class="match-meta">
+                            <span class="meta-chip">
+                                <i class="fas fa-location-dot"></i>
+                                <span>{{ match.venue }}</span>
+                            </span>
+                            <span class="meta-chip">
+                                <i class="fas fa-clock"></i>
+                                <span>{{ match.time }}</span>
+                            </span>
+                            {% if match.status %}
+                            <span class="status {{ match.status_tone }}">{{ match.status }}</span>
+                            {% endif %}
+                        </div>
+                    </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            const revealItems = Array.from(document.querySelectorAll('.reveal'));
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                });
+            }, { threshold: 0.12 });
+
+            revealItems.forEach(function (item) {
+                if (!item.classList.contains('is-visible')) {
+                    observer.observe(item);
+                }
+            });
+
+            const rows = document.querySelectorAll('.match-row');
+            rows.forEach(function (row) {
+                row.addEventListener('mousemove', function (event) {
+                    const rect = row.getBoundingClientRect();
+                    const x = ((event.clientX - rect.left) / rect.width) - 0.5;
+                    row.style.transform = 'translateX(6px) scale(' + (1 + Math.abs(x) * 0.01) + ')';
+                });
+
+                row.addEventListener('mouseleave', function () {
+                    row.style.transform = '';
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

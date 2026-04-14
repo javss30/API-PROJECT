@@ -1,0 +1,177 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="athlete-portal-hero py-5 min-vh-100 d-flex align-items-center">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <!-- Left Column: Content -->
+            <div class="col-lg-6 text-center text-lg-start animate-fade-in">
+                <div class="portal-badge mb-3 d-inline-block">
+                    <span class="badge bg-success text-white px-3 py-2 rounded-pill shadow-sm">
+                        <i class="fas fa-star me-1 text-warning"></i> Official Athlete Portal
+                    </span>
+                </div>
+                <h1 class="display-2 fw-bold lh-1 mb-3 text-dark">Your Journey, <span class="text-success text-gradient">Digitized.</span></h1>
+                <p class="lead mb-4 fs-4 text-muted">Access your personalized training metrics, track your performance growth, and manage your profile in one dedicated space.</p>
+                
+                <div class="d-grid gap-3 d-md-flex justify-content-md-start mb-5">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'management:athlete_dashboard' %}" class="btn btn-success btn-lg px-5 py-3 rounded-pill shadow-lg hover-lift">
+                            <i class="fas fa-tachometer-alt me-2"></i>Access My Dashboard
+                        </a>
+                        <a href="#features" class="btn btn-outline-dark btn-lg px-5 py-3 rounded-pill hover-lift">
+                            Explore Portal
+                        </a>
+                    {% else %}
+                        <a href="{% url 'athlete_portal_login' %}" class="btn btn-success btn-lg px-5 py-3 rounded-pill shadow-lg hover-lift">
+                            <i class="fas fa-sign-in-alt me-2"></i>Athlete Login
+                        </a>
+                        <a href="#features" class="btn btn-outline-dark btn-lg px-5 py-3 rounded-pill hover-lift">
+                            Explore Portal
+                        </a>
+                    {% endif %}
+                </div>
+
+                <div class="portal-stats d-flex gap-4 justify-content-center justify-content-lg-start opacity-75">
+                    <div class="stat-item text-center">
+                        <div class="h4 fw-bold mb-0 text-success">100%</div>
+                        <div class="small text-muted">Personalized</div>
+                    </div>
+                    <div class="stat-divider border-end"></div>
+                    <div class="stat-item text-center">
+                        <div class="h4 fw-bold mb-0 text-success">Real-time</div>
+                        <div class="small text-muted">Tracking</div>
+                    </div>
+                    <div class="stat-divider border-end"></div>
+                    <div class="stat-item text-center">
+                        <div class="h4 fw-bold mb-0 text-success">Secure</div>
+                        <div class="small text-muted">Cloud Access</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Interactive Card -->
+            <div class="col-lg-6 animate-slide-up">
+                <div class="portal-card p-2 rounded-5 shadow-2xl bg-white position-relative">
+                    <div class="card-inner p-4 rounded-5 border border-2 border-light overflow-hidden">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h2 class="h4 fw-bold mb-0 text-dark"><i class="fas fa-bolt text-warning me-2"></i>Performance Hub</h2>
+                            <div class="pulse-dot"></div>
+                        </div>
+                        
+                        <div class="hub-features row g-3">
+                            <div class="col-6">
+                                <div class="hub-item p-3 rounded-4 bg-light text-center h-100 transition-all">
+                                    <i class="fas fa-chart-line fa-2x text-success mb-2"></i>
+                                    <h6 class="fw-bold mb-1">Growth</h6>
+                                    <p class="small text-muted mb-0">Visual progress</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="hub-item p-3 rounded-4 bg-light text-center h-100 transition-all">
+                                    <i class="fas fa-calendar-check fa-2x text-primary mb-2"></i>
+                                    <h6 class="fw-bold mb-1">Sessions</h6>
+                                    <p class="small text-muted mb-0">History logs</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="hub-item p-3 rounded-4 bg-light text-center h-100 transition-all">
+                                    <i class="fas fa-wallet fa-2x text-info mb-2"></i>
+                                    <h6 class="fw-bold mb-1">Payments</h6>
+                                    <p class="small text-muted mb-0">Direct access</p>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="hub-item p-3 rounded-4 bg-light text-center h-100 transition-all">
+                                    <i class="fas fa-user-shield fa-2x text-warning mb-2"></i>
+                                    <h6 class="fw-bold mb-1">Privacy</h6>
+                                    <p class="small text-muted mb-0">Secure profile</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top text-center">
+                            <p class="text-muted small mb-0">Login with the credentials provided by your coach to get started.</p>
+                        </div>
+                    </div>
+                    <!-- Decorative Elements -->
+                    <div class="decoration-circle bg-success opacity-10 position-absolute rounded-circle" style="width: 200px; height: 200px; top: -50px; right: -50px; z-index: -1;"></div>
+                    <div class="decoration-circle bg-primary opacity-10 position-absolute rounded-circle" style="width: 150px; height: 150px; bottom: -30px; left: -30px; z-index: -1;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .athlete-portal-hero {
+        background: radial-gradient(circle at 0% 0%, rgba(25, 135, 84, 0.05) 0%, transparent 50%),
+                    radial-gradient(circle at 100% 100%, rgba(13, 110, 253, 0.05) 0%, transparent 50%);
+    }
+    .text-gradient {
+        background: linear-gradient(45deg, #198754, #20c997);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .shadow-2xl {
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+    }
+    .hover-lift {
+        transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2) !important;
+    }
+    .rounded-5 {
+        border-radius: 2rem !important;
+    }
+    .hub-item:hover {
+        background-color: #f8f9fa !important;
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .pulse-dot {
+        width: 10px;
+        height: 10px;
+        background-color: #198754;
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.7); }
+        70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(25, 135, 84, 0); }
+        100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(25, 135, 84, 0); }
+    }
+    .animate-fade-in {
+        animation: fadeIn 1s ease-out;
+    }
+    .animate-slide-up {
+        animation: slideUp 1s ease-out;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Dark Mode Support */
+    body.dark-mode .portal-card {
+        background-color: #2b3035 !important;
+    }
+    body.dark-mode .card-inner {
+        border-color: #3d4246 !important;
+    }
+    body.dark-mode .hub-item {
+        background-color: #343a40 !important;
+    }
+    body.dark-mode .text-dark {
+        color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}

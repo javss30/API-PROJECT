@@ -1,0 +1,842 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Top Performer Analytics</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            colors: {
+              navy: "#0f172a",
+              brand: "#2563eb",
+              gold: "#eab308",
+            },
+            boxShadow: {
+              soft: "0 1px 0 rgba(15,23,42,0.06), 0 12px 30px rgba(15,23,42,0.08)",
+              goldGlow: "0 0 0 1px rgba(234,179,8,0.55), 0 16px 55px rgba(234,179,8,0.14)",
+              ring: "0 0 0 1px rgba(15,23,42,0.08)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body class="min-h-dvh bg-slate-50 font-sans text-slate-900">
+    {% csrf_token %}
+    {{ athletes_data|json_script:"athletes-data" }}
+    <script>
+      window.__UPDATE_STATS_URL = "{% url 'management:update_basketball_stats' 0 %}";
+    </script>
+    <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3">
+          <div class="grid size-10 place-items-center rounded-xl bg-brand/10 text-brand shadow-[0_0_0_1px_rgba(37,99,235,0.15)]">
+            <i data-lucide="{{ sport_icon|default:'trophy' }}" class="size-5"></i>
+          </div>
+          <div>
+            <h1 class="text-lg font-black tracking-tight sm:text-xl">Top Performer Analytics</h1>
+            <p class="text-xs text-slate-500">Season Performance Rankings • <span id="seasonLabel">Apr 2026</span></p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a
+            href="{% url 'management:dashboard' %}"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
+          >
+            <i data-lucide="arrow-left" class="size-4"></i>
+            Back
+          </a>
+          <button
+            id="exportBtn"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm hover:bg-slate-50"
+          >
+            <i data-lucide="download" class="size-4"></i>
+            Export PDF
+          </button>
+          <button
+            id="addRecordBtn"
+            type="button"
+            class="hidden inline-flex items-center gap-2 rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand/90"
+          >
+            <i data-lucide="plus" class="size-4"></i>
+            Add Game Record
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div class="text-[11px] font-extrabold uppercase tracking-widest text-amber-700">Current Season MVP</div>
+
+      <!-- MVP spotlight card -->
+      <section class="mt-3 rounded-3xl border border-amber-300/70 bg-white px-5 py-5 shadow-goldGlow">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div class="flex items-center gap-4">
+            <button id="mvpAvatar" type="button" class="relative group cursor-pointer border-0 bg-transparent p-0 transition hover:scale-105 active:scale-95">
+              <div class="grid size-16 place-items-center rounded-2xl bg-amber-100 text-amber-800 shadow-[0_10px_30px_rgba(234,179,8,0.18)] group-hover:shadow-[0_12px_35px_rgba(234,179,8,0.25)]">
+                <span id="mvpInitials" class="text-xl font-black">JM</span>
+              </div>
+              <div class="absolute -bottom-2 -right-2 grid size-8 place-items-center rounded-full bg-white shadow-soft ring-1 ring-amber-200">
+                <i data-lucide="crown" class="size-4 text-amber-600"></i>
+              </div>
+            </button>
+            <div class="min-w-0">
+              <button id="mvpName" type="button" class="truncate text-left text-2xl font-black tracking-tight hover:underline cursor-pointer">
+                —
+              </button>
+              <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-600">
+                <span id="mvpRolePill" class="rounded-full bg-brand/10 px-2 py-1 font-bold text-brand">POINT GUARD</span>
+                <span id="mvpMeta">#23 | Junior Year</span>
+              </div>
+              <div id="mvpTrendBox" class="mt-2 inline-flex items-center gap-2 text-xs font-bold text-emerald-600">
+                <i id="mvpTrendIcon" data-lucide="trending-up" class="size-4"></i>
+                <span id="mvpTrendLabel">Excellent Performance Trend</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-2xl bg-slate-50 px-4 py-4 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+              <div class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{{ stat_labels.l1|default:"Points" }}</div>
+              <div id="mvpPts" class="mt-1 text-xl font-black">—</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 px-4 py-4 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+              <div class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{{ stat_labels.l2|default:"Assists" }}</div>
+              <div id="mvpAst" class="mt-1 text-xl font-black">—</div>
+            </div>
+            <div class="rounded-2xl bg-slate-50 px-4 py-4 shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
+              <div class="text-[10px] font-extrabold uppercase tracking-widest text-slate-400">{{ stat_labels.l3|default:"Rebounds" }}</div>
+              <div id="mvpReb" class="mt-1 text-xl font-black">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Roster section -->
+      <section class="mt-7">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-lg font-black tracking-tight">Team Roster Rankings</h2>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <div class="relative">
+              <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"></i>
+              <input
+                id="searchInput"
+                type="text"
+                placeholder="Search athlete…"
+                class="w-72 max-w-[70vw] rounded-2xl border border-slate-200 bg-white py-2.5 pl-10 pr-3 text-sm outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+              />
+            </div>
+            <button
+              id="layoutGridBtn"
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700 shadow-sm hover:bg-slate-50"
+              title="Grid view"
+            >
+              <i data-lucide="layout-grid" class="size-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="resultCount" class="mt-2 text-xs text-slate-500"></div>
+
+        <div id="rosterGrid" class="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3"></div>
+      </section>
+    </main>
+
+    <!-- Slide-over -->
+    <div id="overlay" class="fixed inset-0 z-50 hidden bg-black/35 backdrop-blur-sm"></div>
+
+    <aside
+      id="slideover"
+      class="fixed right-0 top-0 z-50 hidden h-dvh w-full max-w-md translate-x-full border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300"
+      aria-hidden="true"
+    >
+      <div class="flex h-dvh flex-col">
+        <div class="sticky top-0 border-b border-slate-200 bg-white/90 p-4 backdrop-blur">
+          <div class="flex items-start justify-between gap-3">
+            <div id="panelAvatarContainer" class="size-14 rounded-2xl bg-slate-100 overflow-hidden flex-shrink-0"></div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <div id="panelName" class="truncate text-lg font-black text-slate-900">—</div>
+                <span id="panelElite" class="hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-black text-amber-700">
+                  <i data-lucide="trophy" class="size-3.5"></i>
+                  Elite
+                </span>
+              </div>
+              <div id="panelMeta" class="mt-1 text-sm text-slate-600">—</div>
+            </div>
+            <button
+              id="closePanelBtn"
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 hover:bg-slate-50"
+              title="Close"
+            >
+              <i data-lucide="x" class="size-4 text-slate-700"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4">
+          <!-- Health -->
+          <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-bold">Health Status</div>
+              <div id="panelHealth" class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-black text-slate-700">
+                <span id="panelHealthDot" class="size-2 rounded-full bg-slate-500"></span>
+                <span id="panelHealthText">—</span>
+              </div>
+            </div>
+            <div id="panelHealthNote" class="mt-2 text-sm text-slate-600">—</div>
+          </div>
+
+          <!-- Progression bars -->
+          <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+            <div class="text-sm font-bold">Performance Progression</div>
+            <div class="mt-3 space-y-3">
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                  <span>{{ stat_labels.l1|default:"Points" }}</span>
+                  <span id="panelPtsLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div id="panelPtsBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                  <span>{{ stat_labels.l2|default:"Assists" }}</span>
+                  <span id="panelAstLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div id="panelAstBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-600">
+                  <span>{{ stat_labels.l3|default:"Rebounds" }}</span>
+                  <span id="panelRebLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                  <div id="panelRebBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coach observation -->
+          <div class="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-soft">
+            <div class="flex items-center gap-2">
+              <i data-lucide="clipboard-pen" class="size-4 text-slate-500"></i>
+              <div class="text-sm font-bold">Coach’s Observation</div>
+            </div>
+            <p id="panelObservation" class="mt-2 text-sm leading-relaxed text-slate-600">—</p>
+          </div>
+        </div>
+
+        <div class="border-t border-slate-200 bg-white p-4">
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              id="panelAddRecordBtn"
+              type="button"
+              class="hidden inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+            >
+              <i data-lucide="plus" class="size-4"></i>
+              Add Record
+            </button>
+            <button
+              id="panelExportBtn"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+            >
+              <i data-lucide="file-down" class="size-4"></i>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Modal: Add Game Record -->
+    <div id="modalRoot" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-black/45 backdrop-blur-sm"></div>
+      <div class="absolute inset-0 grid place-items-center p-4">
+        <div class="w-full max-w-lg rounded-2xl border border-slate-200 bg-white shadow-2xl">
+          <div class="flex items-center justify-between border-b border-slate-200 p-4">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-slate-300">Action</div>
+              <div class="text-lg font-black">Add Game Record</div>
+            </div>
+            <button
+              id="closeModalBtn"
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white p-2 hover:bg-slate-50"
+              title="Close"
+            >
+              <i data-lucide="x" class="size-4 text-slate-700"></i>
+            </button>
+          </div>
+
+          <form id="recordForm" class="p-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-slate-300">Athlete</label>
+                <select
+                  id="athleteSelect"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                  required
+                ></select>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">{{ stat_labels.l1|default:"Points" }}</label>
+                <input
+                  id="pointsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">{{ stat_labels.l2|default:"Assists" }}</label>
+                <input
+                  id="assistsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">{{ stat_labels.l3|default:"Rebounds" }}</label>
+                <input
+                  id="reboundsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Field Goals Made</label>
+                <input
+                  id="fieldGoalMadeInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Field Goals Attempted</label>
+                <input
+                  id="fieldGoalAttemptedInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Result</label>
+                <select
+                  id="resultInput"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                >
+                  <option value="true">Win</option>
+                  <option value="false">Loss</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Trend</label>
+                <select
+                  id="trendInput"
+                  class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                >
+                  <option value="up">Up</option>
+                  <option value="stable">Stable</option>
+                  <option value="down">Down</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-slate-300">Coach Observation</label>
+                <textarea
+                  id="observationInput"
+                  rows="3"
+                  placeholder="Write a quick observation…"
+                  class="mt-1 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-brand/50 focus:ring-2 focus:ring-brand/20"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                id="cancelBtn"
+                type="button"
+                class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90">
+                Save Record
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 z-50 hidden -translate-x-1/2">
+      <div class="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 shadow-soft backdrop-blur">
+        <span id="toastText">Saved.</span>
+      </div>
+    </div>
+
+    <script>
+      const data = { athletes: [] };
+      (function loadAthletesFromServer() {
+        const scriptEl = document.getElementById("athletes-data");
+        if (!scriptEl || !scriptEl.textContent) return;
+        try {
+          const parsed = JSON.parse(scriptEl.textContent);
+          if (Array.isArray(parsed)) data.athletes = parsed;
+        } catch (e) {
+          console.error("Invalid athletes JSON", e);
+        }
+      })();
+
+      /** Same formula as BasketballStat.overall_rating() in the backend: Rank primarily by points (scores) */
+      function overallRating(a) {
+        if (!a || !a.stats) return 0;
+        const pts = a.stats.l1 || 0;
+        const ast = a.stats.l2 || 0;
+        const reb = a.stats.l3 || 0;
+        const sp = typeof a.speed === "number" ? a.speed : parseFloat(a.speed) || 0;
+        return pts + (ast * 0.1) + (reb * 0.1) + (sp * 0.01);
+      }
+
+      function syncEliteFromRatings() {
+        const top = getTopPerformer();
+        data.athletes.forEach((x) => {
+          x.elite = Boolean(top && String(x.id) === String(top.id));
+        });
+      }
+
+      const el = {
+        rosterGrid: document.getElementById("rosterGrid"),
+        resultCount: document.getElementById("resultCount"),
+        searchInput: document.getElementById("searchInput"),
+        exportBtn: document.getElementById("exportBtn"),
+        addRecordBtn: document.getElementById("addRecordBtn"),
+
+        spotlightName: document.getElementById("spotlightName"),
+        spotlightMeta: document.getElementById("spotlightMeta"),
+        spotlightPts: document.getElementById("spotlightPts"),
+        spotlightAst: document.getElementById("spotlightAst"),
+        spotlightReb: document.getElementById("spotlightReb"),
+        viewSpotlightBtn: document.getElementById("viewSpotlightBtn"),
+
+        overlay: document.getElementById("overlay"),
+        slideover: document.getElementById("slideover"),
+        closePanelBtn: document.getElementById("closePanelBtn"),
+        panelName: document.getElementById("panelName"),
+        panelMeta: document.getElementById("panelMeta"),
+        panelElite: document.getElementById("panelElite"),
+        panelHealthDot: document.getElementById("panelHealthDot"),
+        panelHealthText: document.getElementById("panelHealthText"),
+        panelHealthNote: document.getElementById("panelHealthNote"),
+        panelPtsBar: document.getElementById("panelPtsBar"),
+        panelAstBar: document.getElementById("panelAstBar"),
+        panelRebBar: document.getElementById("panelRebBar"),
+        panelPtsLabel: document.getElementById("panelPtsLabel"),
+        panelAstLabel: document.getElementById("panelAstLabel"),
+        panelRebLabel: document.getElementById("panelRebLabel"),
+        panelObservation: document.getElementById("panelObservation"),
+        panelAddRecordBtn: document.getElementById("panelAddRecordBtn"),
+        panelExportBtn: document.getElementById("panelExportBtn"),
+
+        modalRoot: document.getElementById("modalRoot"),
+        closeModalBtn: document.getElementById("closeModalBtn"),
+        cancelBtn: document.getElementById("cancelBtn"),
+        recordForm: document.getElementById("recordForm"),
+        athleteSelect: document.getElementById("athleteSelect"),
+        pointsInput: document.getElementById("pointsInput"),
+        assistsInput: document.getElementById("assistsInput"),
+        reboundsInput: document.getElementById("reboundsInput"),
+        fieldGoalMadeInput: document.getElementById("fieldGoalMadeInput"),
+        fieldGoalAttemptedInput: document.getElementById("fieldGoalAttemptedInput"),
+        resultInput: document.getElementById("resultInput"),
+        trendInput: document.getElementById("trendInput"),
+        observationInput: document.getElementById("observationInput"),
+
+        toast: document.getElementById("toast"),
+        toastText: document.getElementById("toastText"),
+      };
+
+      const state = { activeAthleteId: null, toastTimer: null };
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function initials(name) {
+        const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+        const a = parts[0]?.[0] || "?";
+        const b = parts.length > 1 ? parts[parts.length - 1][0] : "";
+        return (a + b).toUpperCase();
+      }
+
+      function toast(msg) {
+        el.toastText.textContent = msg;
+        el.toast.classList.remove("hidden");
+        window.clearTimeout(state.toastTimer);
+        state.toastTimer = window.setTimeout(() => el.toast.classList.add("hidden"), 1400);
+      }
+
+      function trendMeta(trend) {
+        switch (trend) {
+          case "up":
+            return { label: "Up", icon: "trending-up", cls: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25" };
+          case "down":
+            return { label: "Down", icon: "trending-down", cls: "text-rose-400 bg-rose-500/10 border-rose-500/25" };
+          default:
+            return { label: "Stable", icon: "minus", cls: "text-slate-300 bg-white/5 border-white/10" };
+        }
+      }
+
+      function healthDot(tone) {
+        return tone === "injured" ? "bg-rose-400" : "bg-emerald-400";
+      }
+
+      function getTopPerformer() {
+        if (!data.athletes.length) return null;
+        return data.athletes.slice().sort((a, b) => overallRating(b) - overallRating(a))[0];
+      }
+
+      function renderSpotlight() {
+        syncEliteFromRatings();
+        const top = getTopPerformer();
+        if (!top) {
+          document.getElementById("mvpName").textContent = "No athletes";
+          document.getElementById("mvpInitials").textContent = "—";
+          document.getElementById("mvpMeta").textContent = "";
+          document.getElementById("mvpPts").textContent = "—";
+          document.getElementById("mvpAst").textContent = "—";
+          document.getElementById("mvpReb").textContent = "—";
+          document.getElementById("mvpName").onclick = null;
+          return;
+        }
+        if (top.profile_picture) {
+          document.getElementById("mvpInitials").innerHTML = `<img src="${top.profile_picture}" class="size-full rounded-2xl object-cover" alt="${top.name}">`;
+        } else {
+          document.getElementById("mvpInitials").textContent = initials(top.name);
+        }
+        document.getElementById("mvpName").textContent = top.name;
+        document.getElementById("mvpMeta").textContent = `${top.jersey || ""} | ${top.grade || ""}`.trim();
+        document.getElementById("mvpRolePill").textContent = String(top.position || "PLAYER").toUpperCase();
+        document.getElementById("mvpPts").textContent = top.stats.l1;
+        document.getElementById("mvpAst").textContent = top.stats.l2;
+        document.getElementById("mvpReb").textContent = top.stats.l3;
+        document.getElementById("mvpName").onclick = () => viewAthlete(top.id);
+        document.getElementById("mvpAvatar").onclick = () => viewAthlete(top.id);
+
+        const tm = trendMeta(top.trend);
+        const trendBox = document.getElementById("mvpTrendBox");
+        const trendIcon = document.getElementById("mvpTrendIcon");
+        const trendLabel = document.getElementById("mvpTrendLabel");
+        
+        if (trendBox && trendIcon && trendLabel) {
+            trendBox.className = `mt-2 inline-flex items-center gap-2 text-xs font-bold ${tm.trend === 'down' ? 'text-rose-600' : tm.trend === 'up' ? 'text-emerald-600' : 'text-slate-500'}`;
+            trendIcon.setAttribute("data-lucide", tm.icon);
+            trendLabel.textContent = tm.label + " Performance Trend";
+        }
+      }
+
+      function renderRoster() {
+        const q = el.searchInput.value.trim().toLowerCase();
+        const top = getTopPerformer();
+        const list = data.athletes.filter((a) => (top ? a.id !== top.id : true));
+        const filtered = list.filter((a) => {
+          if (!q) return true;
+          const hay = `${a.name} ${a.role} ${a.position} ${a.grade} ${a.health.status}`.toLowerCase();
+          return hay.includes(q);
+        });
+        el.resultCount.textContent = `${filtered.length} athlete${filtered.length === 1 ? "" : "s"} shown`;
+
+        el.rosterGrid.innerHTML = filtered
+          .map((a) => {
+            const t = trendMeta(a.trend);
+            const trendIconColor =
+              a.trend === "up" ? "text-emerald-500" : a.trend === "down" ? "text-rose-500" : "text-slate-300";
+            
+            const avatarHtml = a.profile_picture 
+              ? `<img src="${a.profile_picture}" class="size-full rounded-2xl object-cover" alt="${escapeHtml(a.name)}">`
+              : `<span class="text-xs font-black">${escapeHtml(initials(a.name))}</span>`;
+
+            return `
+              <div class="rounded-3xl bg-white p-4 shadow-soft ring-1 ring-slate-200">
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <button type="button" class="grid size-10 place-items-center rounded-2xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors border-0 cursor-pointer overflow-hidden" onclick="viewAthlete('${a.id}')">
+                      ${avatarHtml}
+                    </button>
+                    <div class="min-w-0">
+                      <div class="truncate text-sm font-black cursor-pointer hover:underline" onclick="viewAthlete('${a.id}')">${escapeHtml(a.name)}</div>
+                      <div class="mt-0.5 text-[11px] font-bold uppercase tracking-widest text-slate-400">${escapeHtml(
+                        a.position
+                      )}</div>
+                    </div>
+                  </div>
+                  <i data-lucide="${t.icon}" class="size-4 ${trendIconColor}"></i>
+                </div>
+
+                <div class="mt-4 grid grid-cols-3 gap-2">
+                  <div class="rounded-2xl bg-slate-50 p-2.5 text-center ring-1 ring-slate-100">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ stat_labels.l1|default:"ACES" }}</div>
+                    <div class="text-sm font-black text-slate-900">${a.stats.l1}</div>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 p-2.5 text-center ring-1 ring-slate-100">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ stat_labels.l2|default:"KILLS" }}</div>
+                    <div class="text-sm font-black text-slate-900">${a.stats.l2}</div>
+                  </div>
+                  <div class="rounded-2xl bg-slate-50 p-2.5 text-center ring-1 ring-slate-100">
+                    <div class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ stat_labels.l3|default:"BLOCKS" }}</div>
+                    <div class="text-sm font-black text-slate-900">${a.stats.l3}</div>
+                  </div>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between">
+                  <button
+                    type="button"
+                    class="text-xs font-extrabold uppercase tracking-widest text-brand hover:underline"
+                    onclick="viewAthlete('${a.id}')"
+                  >Detailed Analytics</button>
+                  <button
+                    type="button"
+                    class="inline-flex items-center justify-center rounded-xl bg-slate-50 p-2 text-slate-600 shadow-[0_0_0_1px_rgba(15,23,42,0.05)] hover:bg-slate-100"
+                    onclick="viewAthlete('${a.id}')"
+                    title="Open"
+                  >
+                    <i data-lucide="chevron-right" class="size-4"></i>
+                  </button>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        lucide.createIcons();
+      }
+
+      function openPanel() {
+        el.overlay.classList.remove("hidden");
+        el.slideover.classList.remove("hidden");
+        requestAnimationFrame(() => {
+          el.slideover.classList.remove("translate-x-full");
+          el.slideover.setAttribute("aria-hidden", "false");
+        });
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePanel() {
+        el.slideover.classList.add("translate-x-full");
+        el.slideover.setAttribute("aria-hidden", "true");
+        window.setTimeout(() => {
+          el.slideover.classList.add("hidden");
+          el.overlay.classList.add("hidden");
+        }, 250);
+        document.body.style.overflow = "";
+      }
+
+      function pct(val, max) {
+        if (!max) return 0;
+        return Math.max(0, Math.min(100, Math.round((val / max) * 100)));
+      }
+
+      // Required by prompt
+      window.viewAthlete = function viewAthlete(id) {
+        syncEliteFromRatings();
+        const a = data.athletes.find((x) => String(x.id) === String(id));
+        if (!a) return;
+        state.activeAthleteId = id;
+        el.panelName.textContent = a.name;
+
+        // Populate Panel Avatar
+        const panelAvatar = document.getElementById('panelAvatarContainer');
+        if (a.profile_picture) {
+          panelAvatar.innerHTML = `<img src="${a.profile_picture}" class="size-full object-cover">`;
+          panelAvatar.classList.remove('bg-slate-100', 'flex', 'items-center', 'justify-center');
+        } else {
+          panelAvatar.innerHTML = `<span class="text-lg font-black text-slate-400">${initials(a.name)}</span>`;
+          panelAvatar.classList.add('bg-slate-100', 'flex', 'items-center', 'justify-center');
+        }
+
+        el.panelMeta.textContent = `${a.position} • ${a.jersey || ""} • ${a.grade}`.replace(/\s+•\s+•\s+/g, " • ");
+        el.panelObservation.textContent = a.observation || "—";
+
+        const isElite = Boolean(a.elite);
+        el.panelElite.classList.toggle("hidden", !isElite);
+        el.panelElite.classList.toggle("inline-flex", isElite);
+
+        el.panelHealthText.textContent = a.health.status;
+        el.panelHealthNote.textContent = a.health.note || "—";
+        el.panelHealthDot.className = `size-2 rounded-full ${healthDot(a.health.tone)}`;
+
+        const maxPts = Math.max(...data.athletes.map((x) => x.stats.l1 || 0));
+        const maxAst = Math.max(...data.athletes.map((x) => x.stats.l2 || 0));
+        const maxReb = Math.max(...data.athletes.map((x) => x.stats.l3 || 0));
+        const pPts = pct(a.stats.l1 || 0, maxPts);
+        const pAst = pct(a.stats.l2 || 0, maxAst);
+        const pReb = pct(a.stats.l3 || 0, maxReb);
+
+        el.panelPtsBar.style.width = `${pPts}%`;
+        el.panelAstBar.style.width = `${pAst}%`;
+        el.panelRebBar.style.width = `${pReb}%`;
+        el.panelPtsLabel.textContent = `${a.stats.l1 || 0} (${pPts}%)`;
+        el.panelAstLabel.textContent = `${a.stats.l2 || 0} (${pAst}%)`;
+        el.panelRebLabel.textContent = `${a.stats.l3 || 0} (${pReb}%)`;
+
+        openPanel();
+        lucide.createIcons();
+      };
+
+      function openModal(prefillAthleteId) {
+        el.modalRoot.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        if (prefillAthleteId) el.athleteSelect.value = prefillAthleteId;
+      }
+
+      function closeModal() {
+        el.modalRoot.classList.add("hidden");
+        document.body.style.overflow = "";
+        el.recordForm.reset();
+        el.pointsInput.value = 0;
+        el.assistsInput.value = 0;
+        el.reboundsInput.value = 0;
+        el.fieldGoalMadeInput.value = 0;
+        el.fieldGoalAttemptedInput.value = 0;
+        el.resultInput.value = "true";
+        el.trendInput.value = "up";
+      }
+
+      function populateAthleteSelect() {
+        el.athleteSelect.innerHTML = data.athletes.map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)}</option>`).join("");
+      }
+
+      async function saveRecord({ athleteId, pts, ast, reb, fgMade, fgAttempted, win, trend, observation }) {
+        const a = data.athletes.find((x) => String(x.id) === String(athleteId));
+        if (!a) return;
+        const newPts = (a.stats.l1 || 0) + pts;
+        const newAst = (a.stats.l2 || 0) + ast;
+        const newReb = (a.stats.l3 || 0) + reb;
+        const speed = typeof a.speed === "number" ? a.speed : parseFloat(a.speed) || 0;
+
+        const token = document.querySelector("[name=csrfmiddlewaretoken]");
+        if (!token) {
+          toast("Missing CSRF token.");
+          return;
+        }
+
+        const fd = new FormData();
+        fd.append("csrfmiddlewaretoken", token.value);
+        fd.append("opponent", "Manual Record");
+        fd.append("venue", "Analytics Panel");
+        fd.append("points", String(pts));
+        fd.append("assists", String(ast));
+        fd.append("rebounds", String(reb));
+        fd.append("win", win ? "true" : "false");
+        fd.append("field_goal_made", String(fgMade));
+        fd.append("field_goal_attempted", String(fgAttempted));
+        fd.append("speed", String(speed));
+
+        let url = window.__UPDATE_STATS_URL || "";
+        url = url.replace(/\/0\/?$/, `/${athleteId}/`);
+
+        try {
+          const res = await fetch(url, { method: "POST", body: fd, credentials: "same-origin" });
+          const j = await res.json().catch(() => ({}));
+          if (res.ok && j.success) {
+            a.stats.l1 = newPts;
+            a.stats.l2 = newAst;
+            a.stats.l3 = newReb;
+            if (observation && observation.trim()) {
+              a.observation = observation.trim();
+            }
+            if (trend) a.trend = trend;
+            toast("Record saved.");
+            window.location.reload();
+            return;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        toast("Could not save record. Check your connection and try again.");
+      }
+
+      el.searchInput.addEventListener("input", renderRoster);
+      el.exportBtn.addEventListener("click", () => toast("Export queued (demo)."));
+      el.addRecordBtn.addEventListener("click", () => openModal(state.activeAthleteId));
+      el.panelAddRecordBtn.addEventListener("click", () => openModal(state.activeAthleteId));
+      el.panelExportBtn.addEventListener("click", () => toast("Export queued (demo)."));
+
+      el.overlay.addEventListener("click", closePanel);
+      el.closePanelBtn.addEventListener("click", closePanel);
+
+      el.closeModalBtn.addEventListener("click", closeModal);
+      el.cancelBtn.addEventListener("click", closeModal);
+      el.modalRoot.addEventListener("click", (e) => {
+        if (e.target === el.modalRoot.firstElementChild) closeModal();
+      });
+
+      el.recordForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const athleteId = el.athleteSelect.value;
+        const pts = Number(el.pointsInput.value || 0);
+        const ast = Number(el.assistsInput.value || 0);
+        const reb = Number(el.reboundsInput.value || 0);
+        const fgMade = Number(el.fieldGoalMadeInput.value || 0);
+        const fgAttempted = Number(el.fieldGoalAttemptedInput.value || 0);
+        const win = el.resultInput.value === "true";
+        const trend = el.trendInput.value;
+        const observation = el.observationInput.value;
+        await saveRecord({ athleteId, pts, ast, reb, fgMade, fgAttempted, win, trend, observation });
+      });
+
+      // Init
+      populateAthleteSelect();
+      renderSpotlight();
+      renderRoster();
+      lucide.createIcons();
+
+      // Optional: open from query param ?athlete_id=a1
+      const params = new URLSearchParams(window.location.search);
+      const openId = params.get("athlete_id");
+      if (openId) viewAthlete(openId);
+    </script>
+  </body>
+</html>
+

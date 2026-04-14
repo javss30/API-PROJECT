@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white py-4">
+                    <h2 class="mb-0 fw-bold text-center">
+                        <i class="fas {% if is_edit %}fa-user-edit{% else %}fa-user-plus{% endif %} me-2"></i>
+                        {% if is_edit %}Edit Coach Info{% else %}Register New Coach{% endif %}
+                    </h2>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <h4 class="mb-3 border-bottom pb-2">User Credentials {% if is_edit %}(Leave password blank to keep current){% endif %}</h4>
+                        {% bootstrap_form user_form %}
+                        
+                        <h4 class="mt-4 mb-3 border-bottom pb-2">Coach Profile</h4>
+                        {% bootstrap_form coach_form %}
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill">
+                                <i class="fas fa-save me-2"></i>{% if is_edit %}Update Coach Info{% else %}Create Coach Account{% endif %}
+                            </button>
+                            {% if is_edit %}
+                                <a href="{% url 'management:coach_detail' coach.pk %}" class="btn btn-outline-secondary btn-lg rounded-pill">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

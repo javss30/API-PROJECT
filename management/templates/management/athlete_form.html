@@ -1,0 +1,57 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3">
+                    <h2 class="h4 mb-0">
+                        <i class="fas {% if is_profile_update or is_registration %}fa-user-edit{% else %}fa-user-plus{% endif %} me-2"></i>
+                        {% if is_registration %}Complete Your Athlete Profile{% elif is_profile_update %}Edit Your Profile{% elif form.instance.pk %}Edit Athlete{% else %}Add Athlete{% endif %}
+                    </h2>
+                </div>
+                <div class="card-body p-4">
+                    {% if is_registration %}
+                        <div class="alert alert-info rounded-3 mb-4">
+                            <i class="fas fa-info-circle me-2"></i>Welcome! Please complete your profile to access the Athlete Dashboard.
+                        </div>
+                    {% endif %}
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {% for field in form %}
+                            {% if field.name == 'sports_selection' or field.name == 'sports' %}
+                                {% if portal_type != 'athlete' %}
+                                    {% bootstrap_field field %}
+                                {% else %}
+                                    <div class="d-none">{{ field }}</div>
+                                {% endif %}
+                            {% else %}
+                                {% bootstrap_field field %}
+                            {% endif %}
+                        {% endfor %}
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary rounded-pill py-2">
+                                <i class="fas fa-save me-2"></i>{% if is_registration %}Complete Registration{% else %}Save Changes{% endif %}
+                            </button>
+                            {% if not is_registration %}
+                                <a href="{% if is_profile_update %}{% url 'management:athlete_dashboard' %}{% else %}{% url 'management:athlete_list' %}{% endif %}" class="btn btn-outline-secondary rounded-pill py-2">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rounded-4 { border-radius: 1rem !important; }
+    .form-label { font-weight: 600; }
+    .form-control { border-radius: 0.5rem; }
+</style>
+{% endblock %}

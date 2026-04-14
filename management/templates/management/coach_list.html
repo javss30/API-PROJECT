@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold"><i class="fas fa-user-tie me-2 text-primary"></i>Coaches</h1>
+        <a href="{% url 'management:admin_register_coach' %}" class="btn btn-primary rounded-pill shadow-sm">
+            <i class="fas fa-plus me-2"></i>Register New Coach
+        </a>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                    <span class="input-group-text bg-white border-0 ps-3">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="query" class="form-control border-0 py-2" placeholder="Search coaches by name, contact, specialization, or sports..." value="{{ request.GET.query }}">
+                    <button class="btn btn-primary px-4" type="submit">Search</button>
+                </div>
+                {% if request.GET.query %}
+                    <a href="{% url 'management:coach_list' %}" class="btn btn-outline-secondary rounded-pill d-flex align-items-center justify-content-center px-3">
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Coach</th>
+                        <th>Specialization</th>
+                        <th>Contact</th>
+                        <th>Sports</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for coach in coaches %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'management:coach_detail' coach.pk %}" class="text-decoration-none text-dark">
+                                <div class="d-flex align-items-center">
+                                    {% if coach.profile_picture %}
+                                        <img src="{{ coach.profile_picture.url }}" class="rounded-circle me-3" style="width: 45px; height: 45px; min-width: 45px; min-height: 45px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; min-width: 45px; min-height: 45px;">
+                                            {{ coach.user.username|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ coach.user.get_full_name|default:coach.user.username }}</div>
+                                        <div class="small text-muted">{{ coach.user.email }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </td>
+                        <td>{{ coach.specialization }}</td>
+                        <td>{{ coach.contact_number }}</td>
+                        <td>
+                            {% if 'Basketball' in coach.sports %}
+                                <span class="text-orange fw-bold">Basketball</span>
+                            {% endif %}
+                            {% if 'Volleyball' in coach.sports %}
+                                <span class="text-primary fw-bold">Volleyball</span>
+                            {% endif %}
+                            {% if 'Sepak Takraw' in coach.sports %}
+                                <span class="text-success fw-bold">Sepak Takraw</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'management:coach_detail' coach.pk %}" class="btn btn-sm btn-outline-primary rounded-pill me-2">View Info</a>
+                            <a href="{% url 'management:coach_delete' coach.pk %}" class="btn btn-sm btn-outline-danger rounded-pill">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <i class="fas fa-user-tie fa-3x text-light mb-3"></i>
+                            <p class="text-muted">No coaches registered yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<style>
+    .text-orange {
+        color: #fd7e14 !important;
+    }
+    .text-success {
+        color: #198754 !important;
+    }
+    .text-primary {
+        color: #0d6efd !important;
+    }
+</style>
+{% endblock %}

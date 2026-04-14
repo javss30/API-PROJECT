@@ -1,0 +1,375 @@
+<!-- Coach Identity Modal -->
+<div id="coachIdentityModal" class="fixed inset-0 z-[200] hidden">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" id="modalBackdrop"></div>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <div class="absolute right-0 top-0 bottom-0 w-full sm:w-[400px] bg-navy border-l border-white/10 shadow-2xl flex flex-col transform translate-x-full transition-transform duration-300" id="modalContent">
+        
+        <!-- View 1: Coach Identity (Image 2) -->
+        <div id="viewIdentity" class="flex flex-col h-full">
+            <div class="p-6 flex items-center justify-between border-b border-white/5">
+                <span class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Coach Identity</span>
+                <button class="p-2 rounded-xl hover:bg-white/5 text-slate-400 closeCoachModal">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-8 flex flex-col items-center">
+                <div class="relative mb-6">
+                    <div class="relative">
+                        {% if user.coach.profile_picture %}
+                            <img src="{{ user.coach.profile_picture.url }}" id="coachAvatarPreview" class="w-32 h-32 rounded-[2.5rem] object-cover ring-4 ring-brand/30 transition-all" alt="Profile">
+                        {% else %}
+                            <div id="coachAvatarPlaceholder" class="w-32 h-32 rounded-[2.5rem] bg-brand/10 flex items-center justify-center border-4 border-brand/30 transition-all">
+                                <i data-lucide="user" class="w-12 h-12 text-brand"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Dedicated Upload Icon Button -->
+                        <button type="button" id="trigger_photo_upload" class="absolute -bottom-2 -right-2 bg-brand p-3 rounded-2xl shadow-xl border-4 border-navy hover:scale-110 transition-all text-white group">
+                            <i data-lucide="camera" class="w-5 h-5 group-active:scale-90 transition-transform"></i>
+                        </button>
+                        <input type="file" id="coach_photo_input" class="hidden" accept="image/*">
+                    </div>
+                    <div class="absolute top-0 left-0 w-6 h-6 bg-success rounded-full border-4 border-navy"></div>
+                </div>
+                
+                <h2 class="text-2xl font-black text-white tracking-tight mb-1 text-center">{{ user.get_full_name|default:user.username }}</h2>
+                <p class="text-[10px] font-black text-brand uppercase tracking-[0.15em] mb-8 text-center">MASTER TACTICAL COACH</p>
+                
+                <div class="grid grid-cols-2 gap-4 w-full mb-8">
+                    <div class="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Experience</p>
+                        <p class="text-xl font-black text-white">{{ user.coach.experience_years|default:"0" }} Years</p>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 rounded-3xl p-6 text-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Rating</p>
+                        <p class="text-xl font-black text-white">{{ user.coach.rating|default:"5.0" }}/5.0</p>
+                    </div>
+                </div>
+                
+                <div class="w-full space-y-3">
+                    <button class="w-full flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-[1.5rem] hover:bg-white/10 transition-all group" id="btnEditBio">
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-brand/20 rounded-2xl">
+                                <i data-lucide="user-cog" class="w-5 h-5 text-brand"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-xs font-black text-white uppercase tracking-wider">Edit Bio & History</p>
+                                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Update your career milestones</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                    
+                    <button class="w-full flex items-center justify-between p-5 bg-white/5 border border-white/10 rounded-[1.5rem] hover:bg-white/10 transition-all group" id="btnNotifications">
+                        <div class="flex items-center gap-4">
+                            <div class="p-3 bg-warning/20 rounded-2xl">
+                                <i data-lucide="bell" class="w-5 h-5 text-warning"></i>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-xs font-black text-white uppercase tracking-wider">Notification Settings</p>
+                                <p class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Manage alerts and triggers</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-600 group-hover:translate-x-1 transition-transform"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- View 2: Bio & History (Image 3) -->
+        <div id="viewBio" class="hidden flex flex-col h-full">
+            <div class="p-6 flex items-center gap-4 border-b border-white/5">
+                <button class="p-2 rounded-xl hover:bg-white/5 text-slate-400 backToIdentity">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <span class="text-sm font-black uppercase tracking-[0.2em] text-white">Bio & History</span>
+            </div>
+            
+            <form class="flex-1 overflow-y-auto p-8 space-y-8" id="formBio">
+                {% csrf_token %}
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 block">About Me</label>
+                    <textarea name="bio" class="w-full h-40 bg-white/5 border border-white/10 rounded-[1.5rem] p-5 text-xs text-slate-300 focus:ring-2 focus:ring-brand outline-none transition-all resize-none">{{ user.coach.bio|default:"" }}</textarea>
+                </div>
+                
+                <div class="space-y-4">
+                    <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 block">Career Milestones</label>
+                    <div id="milestonesList" class="space-y-3">
+                        {% for milestone in user.coach.career_milestones.split|slice:":3" %}
+                            {% if milestone %}
+                            <div class="p-5 bg-white/5 border border-white/10 rounded-[1.25rem] flex items-center gap-4 border-l-4 border-l-brand">
+                                <div class="flex-1">
+                                    <p class="text-[11px] font-black text-white uppercase tracking-wider">{{ milestone }}</p>
+                                    <p class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Milestone Verified</p>
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="mt-4 flex gap-2">
+                        <input type="text" id="newMilestone" placeholder="Add milestone..." class="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white focus:ring-1 focus:ring-brand outline-none">
+                        <button type="button" id="btnAddMilestone" class="p-3 bg-brand text-white rounded-xl">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="w-full p-5 bg-brand text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-brand/90 transition-all shadow-xl shadow-brand/20 mt-auto">
+                    Save Changes
+                </button>
+            </form>
+        </div>
+
+        <!-- View 3: Notification Settings (Image 4) -->
+        <div id="viewNotifs" class="hidden flex flex-col h-full">
+            <div class="p-6 flex items-center gap-4 border-b border-white/5">
+                <button class="p-2 rounded-xl hover:bg-white/5 text-slate-400 backToIdentity">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <span class="text-sm font-black uppercase tracking-[0.2em] text-white">Notifications</span>
+            </div>
+            
+            <form class="flex-1 overflow-y-auto p-8 space-y-6" id="formNotifs">
+                {% csrf_token %}
+                <div class="p-6 bg-white/5 border border-white/10 rounded-[1.5rem] flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-black text-white uppercase tracking-wider">Push Alerts</p>
+                        <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">Real-time mobile updates</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="push_alerts" class="sr-only peer" {% if user.coach.push_alerts %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                    </label>
+                </div>
+                
+                <div class="p-6 bg-white/5 border border-white/10 rounded-[1.5rem] flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-black text-white uppercase tracking-wider">Weekly Reports</p>
+                        <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mt-1">Summaries via email</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="weekly_reports" class="sr-only peer" {% if user.coach.weekly_reports %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                    </label>
+                </div>
+
+                <div class="p-6 bg-white/5 border border-white/10 rounded-[1.5rem] flex items-center justify-between">
+                    <div>
+                        <p class="text-[11px] font-black text-white uppercase tracking-wider">Athlete Injury Alerts</p>
+                        <p class="text-[8px] font-black text-danger uppercase tracking-widest mt-1">Critical Priority</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="injury_alerts" class="sr-only peer" {% if user.coach.injury_alerts %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand"></div>
+                    </label>
+                </div>
+                
+                <div class="mt-auto pt-8">
+                    <p class="text-[8px] font-black text-slate-600 uppercase tracking-[0.2em] text-center mb-6">Connected Devices: iPhone 15 Pro, iPad Air</p>
+                    <button type="submit" class="w-full p-5 bg-brand text-white rounded-[1.5rem] font-black uppercase tracking-[0.2em] text-xs hover:bg-brand/90 transition-all shadow-xl shadow-brand/20">
+                        Confirm Preferences
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const trigger = document.getElementById('coachProfileTrigger');
+    const modal = document.getElementById('coachIdentityModal');
+    const content = document.getElementById('modalContent');
+    const backdrop = document.getElementById('modalBackdrop');
+    const closeBtns = document.querySelectorAll('.closeCoachModal');
+    
+    const viewIdentity = document.getElementById('viewIdentity');
+    const viewBio = document.getElementById('viewBio');
+    const viewNotifs = document.getElementById('viewNotifs');
+    
+    const btnEditBio = document.getElementById('btnEditBio');
+    const btnNotifications = document.getElementById('btnNotifications');
+    const backBtns = document.querySelectorAll('.backToIdentity');
+    
+    if (trigger) {
+        trigger.addEventListener('click', function() {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                content.classList.remove('translate-x-full');
+            }, 10);
+        });
+    }
+    
+    function closeModal() {
+        content.classList.add('translate-x-full');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            // Reset to first view
+            viewIdentity.classList.remove('hidden');
+            viewBio.classList.add('hidden');
+            viewNotifs.classList.add('hidden');
+        }, 300);
+    }
+    
+    closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
+    backdrop.addEventListener('click', closeModal);
+    
+    if (btnEditBio) {
+        btnEditBio.addEventListener('click', function() {
+            viewIdentity.classList.add('hidden');
+            viewBio.classList.remove('hidden');
+        });
+    }
+    
+    if (btnNotifications) {
+        btnNotifications.addEventListener('click', function() {
+            viewIdentity.classList.add('hidden');
+            viewNotifs.classList.remove('hidden');
+        });
+    }
+    
+    backBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            viewBio.classList.add('hidden');
+            viewNotifs.classList.add('hidden');
+            viewIdentity.classList.remove('hidden');
+        });
+    });
+
+    // Bio Form Submission
+    const formBio = document.getElementById('formBio');
+    if (formBio) {
+        formBio.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(formBio);
+            // Get milestones
+            const milestones = Array.from(document.querySelectorAll('#milestonesList p')).map(p => p.textContent).join(';');
+            formData.append('milestones', milestones);
+            
+            fetch('{% url "management:update_coach_bio" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Bio updated successfully!');
+                }
+            });
+        });
+    }
+
+    // Notifs Form Submission
+    const formNotifs = document.getElementById('formNotifs');
+    if (formNotifs) {
+        formNotifs.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(formNotifs);
+            // Checkboxes
+            formData.set('push_alerts', formNotifs.push_alerts.checked);
+            formData.set('weekly_reports', formNotifs.weekly_reports.checked);
+            formData.set('injury_alerts', formNotifs.injury_alerts.checked);
+            
+            fetch('{% url "management:update_coach_notifs" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Preferences saved!');
+                }
+            });
+        });
+    }
+
+    // Milestone Add
+    const btnAddMilestone = document.getElementById('btnAddMilestone');
+    const inputMilestone = document.getElementById('newMilestone');
+    const milestonesList = document.getElementById('milestonesList');
+    
+    if (btnAddMilestone) {
+        btnAddMilestone.addEventListener('click', function() {
+            const val = inputMilestone.value.trim();
+            if (val) {
+                const div = document.createElement('div');
+                div.className = "p-5 bg-white/5 border border-white/10 rounded-[1.25rem] flex items-center gap-4 border-l-4 border-l-brand";
+                div.innerHTML = `
+                    <div class="flex-1">
+                        <p class="text-[11px] font-black text-white uppercase tracking-wider">${val}</p>
+                        <p class="text-[8px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Milestone Verified</p>
+                    </div>
+                `;
+                milestonesList.appendChild(div);
+                inputMilestone.value = '';
+            }
+        });
+    }
+
+    // Profile Photo Upload
+    const photoInput = document.getElementById('coach_photo_input');
+    const triggerBtn = document.getElementById('trigger_photo_upload');
+    const avatarPreview = document.getElementById('coachAvatarPreview');
+    const avatarPlaceholder = document.getElementById('coachAvatarPlaceholder');
+    const headerTriggerAvatar = document.querySelector('#coachProfileTrigger img');
+
+    if (triggerBtn && photoInput) {
+        triggerBtn.addEventListener('click', () => photoInput.click());
+    }
+
+    if (photoInput) {
+        photoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append('profile_picture', file);
+                
+                // Get CSRF token reliably
+                const csrfToken = document.querySelector('#coachIdentityModal [name=csrfmiddlewaretoken]').value;
+                
+                fetch('{% url "management:update_coach_photo" %}', {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-CSRFToken': csrfToken
+                    }
+                })
+                .then(async response => {
+                    const data = await response.json();
+                    if (response.ok && data.success) {
+                        // Update preview in modal
+                        if (avatarPreview) {
+                            avatarPreview.src = data.url;
+                        } else if (avatarPlaceholder) {
+                            const img = document.createElement('img');
+                            img.id = "coachAvatarPreview";
+                            img.src = data.url;
+                            img.className = "w-32 h-32 rounded-[2.5rem] object-cover ring-4 ring-brand/30 transition-all";
+                            avatarPlaceholder.parentNode.replaceChild(img, avatarPlaceholder);
+                        }
+                        
+                        // Update avatar in header
+                        if (headerTriggerAvatar) {
+                            headerTriggerAvatar.src = data.url;
+                        }
+                        
+                        alert('Profile picture updated successfully!');
+                    } else {
+                        console.error('Server error:', data);
+                        alert('Error uploading photo: ' + (data.message || 'Server error occurred'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Fetch error:', error);
+                    alert('Network error or server unavailable.');
+                });
+            }
+        });
+    }
+});
+</script>

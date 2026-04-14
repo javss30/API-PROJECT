@@ -1,0 +1,779 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basketball Coach Portal | Athlete Analytics</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            colors: {
+              navy: "#0f172a",
+              brand: "#2563eb",
+              gold: "#eab308",
+            },
+            boxShadow: {
+              panel: "0 0 0 1px rgba(255,255,255,0.08), 0 20px 60px rgba(0,0,0,0.55)",
+              glowBlue: "0 0 0 1px rgba(37,99,235,0.35), 0 18px 55px rgba(37,99,235,0.18)",
+              glowGold: "0 0 0 1px rgba(234,179,8,0.55), 0 18px 70px rgba(234,179,8,0.18)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Lucide icons (icon set; CDN build) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body class="min-h-dvh bg-navy font-sans text-slate-100">
+    <!-- Top bar -->
+    <header class="sticky top-0 z-40 border-b border-white/10 bg-navy/85 backdrop-blur">
+      <div class="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div class="flex items-center gap-3">
+          <div class="grid size-10 place-items-center rounded-xl bg-brand/15 ring-1 ring-brand/35 shadow-glowBlue">
+            <i data-lucide="bar-chart-3" class="size-5 text-brand"></i>
+          </div>
+          <div>
+            <div class="text-xs uppercase tracking-wider text-slate-300">Basketball Coach Portal</div>
+            <h1 class="text-lg font-black tracking-tight sm:text-xl">Athlete Analytics</h1>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="exportBtn"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10"
+          >
+            <i data-lucide="file-down" class="size-4"></i>
+            Export PDF
+          </button>
+          <button
+            id="addRecordBtn"
+            type="button"
+            class="inline-flex items-center gap-2 rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+          >
+            <i data-lucide="plus" class="size-4"></i>
+            Add Game Record
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <!-- Top performer spotlight -->
+      <section id="spotlight" class="rounded-2xl border border-gold/30 bg-gradient-to-br from-gold/15 via-white/5 to-white/0 p-5 shadow-glowGold">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-4">
+            <div class="relative grid size-14 place-items-center rounded-2xl bg-gold/20 ring-1 ring-gold/40">
+              <i data-lucide="crown" class="size-7 text-gold"></i>
+              <span class="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-navy ring-1 ring-gold/50">
+                <i data-lucide="trophy" class="size-3.5 text-gold"></i>
+              </span>
+            </div>
+            <div class="min-w-0">
+              <div class="text-xs font-semibold uppercase tracking-wider text-gold">Excellent Athlete</div>
+              <button
+                id="spotlightName"
+                type="button"
+                class="mt-1 truncate text-left text-2xl font-black tracking-tight hover:underline"
+              >
+                —
+              </button>
+              <div id="spotlightMeta" class="mt-1 text-sm text-slate-300">—</div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div class="text-[11px] uppercase tracking-wider text-slate-300">Total Points</div>
+              <div id="spotlightPts" class="mt-1 text-xl font-black">—</div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div class="text-[11px] uppercase tracking-wider text-slate-300">Total Assists</div>
+              <div id="spotlightAst" class="mt-1 text-xl font-black">—</div>
+            </div>
+            <div class="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+              <div class="text-[11px] uppercase tracking-wider text-slate-300">Total Rebounds</div>
+              <div id="spotlightReb" class="mt-1 text-xl font-black">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-center gap-2 text-sm text-slate-300">
+            <i data-lucide="sparkles" class="size-4 text-gold"></i>
+            Gold glow indicates elite status this season.
+          </div>
+          <button
+            id="viewSpotlightBtn"
+            type="button"
+            class="inline-flex items-center justify-center gap-2 rounded-xl border border-gold/35 bg-gold/10 px-3 py-2 text-sm font-semibold text-gold hover:bg-gold/15"
+          >
+            <i data-lucide="activity" class="size-4"></i>
+            View Detailed Analytics
+          </button>
+        </div>
+      </section>
+
+      <!-- Controls -->
+      <section class="mt-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div class="max-w-xl flex-1">
+            <div class="relative">
+              <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"></i>
+              <input
+                id="searchInput"
+                type="text"
+                placeholder="Search roster… (name, role, status)"
+                class="w-full rounded-2xl border border-white/10 bg-white/5 py-3 pl-10 pr-4 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+              />
+            </div>
+            <div class="mt-1 text-xs text-slate-400">Live search filter updates the roster instantly.</div>
+          </div>
+
+          <div class="flex items-center gap-2 text-xs text-slate-300">
+            <span class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+              <span class="size-2 rounded-full bg-emerald-400"></span>
+              Cleared
+            </span>
+            <span class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+              <span class="size-2 rounded-full bg-rose-400"></span>
+              Injured
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Leaderboard grid -->
+      <section class="mt-5">
+        <div class="flex items-end justify-between">
+          <h2 class="text-lg font-black tracking-tight sm:text-xl">Roster Leaderboard</h2>
+          <div id="resultCount" class="text-xs text-slate-400"></div>
+        </div>
+
+        <div id="rosterGrid" class="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3"></div>
+      </section>
+    </main>
+
+    <!-- Slide-over -->
+    <div id="overlay" class="fixed inset-0 z-50 hidden bg-black/55 backdrop-blur-sm"></div>
+
+    <aside
+      id="slideover"
+      class="fixed right-0 top-0 z-50 hidden h-dvh w-full max-w-md translate-x-full border-l border-white/10 bg-navy/95 shadow-panel transition-transform duration-300"
+      aria-hidden="true"
+    >
+      <div class="flex h-dvh flex-col">
+        <div class="sticky top-0 border-b border-white/10 bg-navy/90 p-4 backdrop-blur">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <div id="panelName" class="truncate text-lg font-black">—</div>
+                <span id="panelElite" class="hidden items-center gap-1 rounded-full border border-gold/35 bg-gold/10 px-2 py-0.5 text-[11px] font-bold text-gold">
+                  <i data-lucide="trophy" class="size-3.5"></i>
+                  Elite
+                </span>
+              </div>
+              <div id="panelMeta" class="mt-1 text-sm text-slate-300">—</div>
+            </div>
+            <button
+              id="closePanelBtn"
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+              title="Close"
+            >
+              <i data-lucide="x" class="size-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-auto p-4">
+          <!-- Health -->
+          <div class="rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="flex items-center justify-between gap-3">
+              <div class="text-sm font-bold">Health Status</div>
+              <div id="panelHealth" class="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-bold">
+                <span id="panelHealthDot" class="size-2 rounded-full bg-slate-500"></span>
+                <span id="panelHealthText">—</span>
+              </div>
+            </div>
+            <div id="panelHealthNote" class="mt-2 text-sm text-slate-300">—</div>
+          </div>
+
+          <!-- Progression bars -->
+          <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="text-sm font-bold">Performance Progression</div>
+            <div class="mt-3 space-y-3">
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                  <span>Points</span>
+                  <span id="panelPtsLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div id="panelPtsBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                  <span>Assists</span>
+                  <span id="panelAstLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div id="panelAstBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex items-center justify-between text-xs text-slate-300">
+                  <span>Rebounds</span>
+                  <span id="panelRebLabel">—</span>
+                </div>
+                <div class="mt-1 h-2.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div id="panelRebBar" class="h-full rounded-full bg-brand" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Coach observation -->
+          <div class="mt-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+            <div class="flex items-center gap-2">
+              <i data-lucide="clipboard-pen" class="size-4 text-slate-300"></i>
+              <div class="text-sm font-bold">Coach’s Observation</div>
+            </div>
+            <p id="panelObservation" class="mt-2 text-sm leading-relaxed text-slate-300">—</p>
+          </div>
+        </div>
+
+        <div class="border-t border-white/10 bg-navy/90 p-4">
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              id="panelAddRecordBtn"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90"
+            >
+              <i data-lucide="plus" class="size-4"></i>
+              Add Record
+            </button>
+            <button
+              id="panelExportBtn"
+              type="button"
+              class="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10"
+            >
+              <i data-lucide="file-down" class="size-4"></i>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Modal: Add Game Record -->
+    <div id="modalRoot" class="fixed inset-0 z-50 hidden">
+      <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+      <div class="absolute inset-0 grid place-items-center p-4">
+        <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-navy shadow-panel">
+          <div class="flex items-center justify-between border-b border-white/10 p-4">
+            <div>
+              <div class="text-xs uppercase tracking-wider text-slate-300">Action</div>
+              <div class="text-lg font-black">Add Game Record</div>
+            </div>
+            <button
+              id="closeModalBtn"
+              type="button"
+              class="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/5 p-2 hover:bg-white/10"
+              title="Close"
+            >
+              <i data-lucide="x" class="size-4"></i>
+            </button>
+          </div>
+
+          <form id="recordForm" class="p-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-slate-300">Athlete</label>
+                <select
+                  id="athleteSelect"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                  required
+                ></select>
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Points</label>
+                <input
+                  id="pointsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Assists</label>
+                <input
+                  id="assistsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Rebounds</label>
+                <input
+                  id="reboundsInput"
+                  type="number"
+                  min="0"
+                  value="0"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                  required
+                />
+              </div>
+              <div>
+                <label class="text-xs font-bold text-slate-300">Trend</label>
+                <select
+                  id="trendInput"
+                  class="mt-1 w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                >
+                  <option value="up">Up</option>
+                  <option value="stable">Stable</option>
+                  <option value="down">Down</option>
+                </select>
+              </div>
+              <div class="sm:col-span-2">
+                <label class="text-xs font-bold text-slate-300">Coach Observation</label>
+                <textarea
+                  id="observationInput"
+                  rows="3"
+                  placeholder="Write a quick observation…"
+                  class="mt-1 w-full resize-none rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <button
+                id="cancelBtn"
+                type="button"
+                class="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm font-semibold text-slate-100 hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button type="submit" class="rounded-xl bg-brand px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand/90">
+                Save Record
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 z-50 hidden -translate-x-1/2">
+      <div class="rounded-2xl border border-white/10 bg-navy/90 px-4 py-3 text-sm text-slate-100 shadow-panel backdrop-blur">
+        <span id="toastText">Saved.</span>
+      </div>
+    </div>
+
+    <script>
+      // Demo data object (you can replace with real DB/API later)
+      const data = {
+        athletes: [
+          {
+            id: "a1",
+            name: "Johna macasero",
+            role: "Athlete",
+            position: "SG",
+            grade: "Grade 11",
+            elite: true,
+            stats: { pts: 312, ast: 104, reb: 188 },
+            trend: "up",
+            health: { status: "Cleared", note: "Full participation. Conditioning improving.", tone: "cleared" },
+            observation: "Aggressive downhill drives. Keep shot selection tight and push pace in transition.",
+          },
+          {
+            id: "a2",
+            name: "Lenovo Butay",
+            role: "Athlete",
+            position: "PG",
+            grade: "Grade 10",
+            elite: false,
+            stats: { pts: 210, ast: 141, reb: 66 },
+            trend: "stable",
+            health: { status: "Cleared", note: "No restrictions this week.", tone: "cleared" },
+            observation: "Great vision. Improve on-ball pressure defense and reduce turnovers under traps.",
+          },
+          {
+            id: "a3",
+            name: "A. Santos",
+            role: "Athlete",
+            position: "SF",
+            grade: "Grade 12",
+            elite: false,
+            stats: { pts: 248, ast: 72, reb: 132 },
+            trend: "up",
+            health: { status: "Cleared", note: "Minor soreness; recovery protocol followed.", tone: "cleared" },
+            observation: "Strong rebounding. Add 2nd-effort cuts and keep corners spaced on drives.",
+          },
+          {
+            id: "a4",
+            name: "K. Dela Cruz",
+            role: "Athlete",
+            position: "C",
+            grade: "Grade 9",
+            elite: false,
+            stats: { pts: 154, ast: 28, reb: 201 },
+            trend: "down",
+            health: { status: "Injured", note: "Knee soreness. Limit impact + trainer check.", tone: "injured" },
+            observation: "Dominate the glass. Focus on footwork and strong base on screens.",
+          },
+          {
+            id: "a5",
+            name: "M. Reyes",
+            role: "Athlete",
+            position: "PF",
+            grade: "Grade 10",
+            elite: false,
+            stats: { pts: 176, ast: 44, reb: 119 },
+            trend: "stable",
+            health: { status: "Cleared", note: "Good to go.", tone: "cleared" },
+            observation: "Reliable mid-post touches. Add quick decision passing to punish doubles.",
+          },
+          {
+            id: "a6",
+            name: "S. Villanueva",
+            role: "Athlete",
+            position: "SG",
+            grade: "Grade 12",
+            elite: false,
+            stats: { pts: 196, ast: 61, reb: 88 },
+            trend: "up",
+            health: { status: "Cleared", note: "High energy—manage minutes.", tone: "cleared" },
+            observation: "Elite hustle. Keep closeouts disciplined and attack gaps off the catch.",
+          },
+        ],
+      };
+
+      const el = {
+        rosterGrid: document.getElementById("rosterGrid"),
+        resultCount: document.getElementById("resultCount"),
+        searchInput: document.getElementById("searchInput"),
+        exportBtn: document.getElementById("exportBtn"),
+        addRecordBtn: document.getElementById("addRecordBtn"),
+
+        spotlightName: document.getElementById("spotlightName"),
+        spotlightMeta: document.getElementById("spotlightMeta"),
+        spotlightPts: document.getElementById("spotlightPts"),
+        spotlightAst: document.getElementById("spotlightAst"),
+        spotlightReb: document.getElementById("spotlightReb"),
+        viewSpotlightBtn: document.getElementById("viewSpotlightBtn"),
+
+        overlay: document.getElementById("overlay"),
+        slideover: document.getElementById("slideover"),
+        closePanelBtn: document.getElementById("closePanelBtn"),
+        panelName: document.getElementById("panelName"),
+        panelMeta: document.getElementById("panelMeta"),
+        panelElite: document.getElementById("panelElite"),
+        panelHealthDot: document.getElementById("panelHealthDot"),
+        panelHealthText: document.getElementById("panelHealthText"),
+        panelHealthNote: document.getElementById("panelHealthNote"),
+        panelPtsBar: document.getElementById("panelPtsBar"),
+        panelAstBar: document.getElementById("panelAstBar"),
+        panelRebBar: document.getElementById("panelRebBar"),
+        panelPtsLabel: document.getElementById("panelPtsLabel"),
+        panelAstLabel: document.getElementById("panelAstLabel"),
+        panelRebLabel: document.getElementById("panelRebLabel"),
+        panelObservation: document.getElementById("panelObservation"),
+        panelAddRecordBtn: document.getElementById("panelAddRecordBtn"),
+        panelExportBtn: document.getElementById("panelExportBtn"),
+
+        modalRoot: document.getElementById("modalRoot"),
+        closeModalBtn: document.getElementById("closeModalBtn"),
+        cancelBtn: document.getElementById("cancelBtn"),
+        recordForm: document.getElementById("recordForm"),
+        athleteSelect: document.getElementById("athleteSelect"),
+        pointsInput: document.getElementById("pointsInput"),
+        assistsInput: document.getElementById("assistsInput"),
+        reboundsInput: document.getElementById("reboundsInput"),
+        trendInput: document.getElementById("trendInput"),
+        observationInput: document.getElementById("observationInput"),
+
+        toast: document.getElementById("toast"),
+        toastText: document.getElementById("toastText"),
+      };
+
+      const state = {
+        activeAthleteId: null,
+        toastTimer: null,
+      };
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function initials(name) {
+        const parts = String(name || "").trim().split(/\s+/).filter(Boolean);
+        const a = parts[0]?.[0] || "?";
+        const b = parts.length > 1 ? parts[parts.length - 1][0] : "";
+        return (a + b).toUpperCase();
+      }
+
+      function toast(msg) {
+        el.toastText.textContent = msg;
+        el.toast.classList.remove("hidden");
+        window.clearTimeout(state.toastTimer);
+        state.toastTimer = window.setTimeout(() => el.toast.classList.add("hidden"), 1400);
+      }
+
+      function trendMeta(trend) {
+        switch (trend) {
+          case "up":
+            return { label: "Up", icon: "trending-up", cls: "text-emerald-400 bg-emerald-500/10 border-emerald-500/25" };
+          case "down":
+            return { label: "Down", icon: "trending-down", cls: "text-rose-400 bg-rose-500/10 border-rose-500/25" };
+          default:
+            return { label: "Stable", icon: "minus", cls: "text-slate-300 bg-white/5 border-white/10" };
+        }
+      }
+
+      function healthDot(tone) {
+        return tone === "injured" ? "bg-rose-400" : "bg-emerald-400";
+      }
+
+      function getTopPerformer() {
+        // Prefer explicit elite, else highest points
+        const elite = data.athletes.find((a) => a.elite);
+        if (elite) return elite;
+        return data.athletes.slice().sort((a, b) => b.stats.pts - a.stats.pts)[0] || null;
+      }
+
+      function renderSpotlight() {
+        const top = getTopPerformer();
+        if (!top) return;
+        el.spotlightName.textContent = top.name;
+        el.spotlightMeta.textContent = `${top.role} • ${top.position} • ${top.grade}`;
+        el.spotlightPts.textContent = top.stats.pts;
+        el.spotlightAst.textContent = top.stats.ast;
+        el.spotlightReb.textContent = top.stats.reb;
+
+        el.spotlightName.onclick = () => viewAthlete(top.id);
+        el.viewSpotlightBtn.onclick = () => viewAthlete(top.id);
+      }
+
+      function renderRoster() {
+        const q = el.searchInput.value.trim().toLowerCase();
+        const top = getTopPerformer();
+        const list = data.athletes.filter((a) => (top ? a.id !== top.id : true));
+        const filtered = list.filter((a) => {
+          if (!q) return true;
+          const hay = `${a.name} ${a.role} ${a.position} ${a.grade} ${a.health.status}`.toLowerCase();
+          return hay.includes(q);
+        });
+
+        el.resultCount.textContent = `${filtered.length} athlete${filtered.length === 1 ? "" : "s"} shown`;
+
+        el.rosterGrid.innerHTML = filtered
+          .map((a) => {
+            const t = trendMeta(a.trend);
+            return `
+              <button
+                type="button"
+                class="group rounded-2xl border border-white/10 bg-white/5 p-4 text-left shadow-glowBlue/0 transition hover:border-white/15 hover:bg-white/7 hover:shadow-glowBlue focus:outline-none focus:ring-2 focus:ring-brand/25"
+                onclick="viewAthlete('${a.id}')"
+              >
+                <div class="flex items-start justify-between gap-3">
+                  <div class="flex items-center gap-3">
+                    <div class="relative grid size-11 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+                      <span class="text-sm font-black">${escapeHtml(initials(a.name))}</span>
+                      <span class="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border border-navy ${healthDot(a.health.tone)}"></span>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="truncate text-base font-black tracking-tight">${escapeHtml(a.name)}</div>
+                      <div class="mt-0.5 text-xs text-slate-300">${escapeHtml(a.position)} • ${escapeHtml(a.grade)}</div>
+                    </div>
+                  </div>
+                  <span class="inline-flex items-center gap-1 rounded-full border px-2 py-1 text-[11px] font-black ${t.cls}">
+                    <i data-lucide="${t.icon}" class="size-3.5"></i>
+                    ${t.label}
+                  </span>
+                </div>
+
+                <div class="mt-4 grid grid-cols-3 gap-2">
+                  <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">PTS</div>
+                    <div class="mt-0.5 text-lg font-black">${a.stats.pts}</div>
+                  </div>
+                  <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">AST</div>
+                    <div class="mt-0.5 text-lg font-black">${a.stats.ast}</div>
+                  </div>
+                  <div class="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-300">REB</div>
+                    <div class="mt-0.5 text-lg font-black">${a.stats.reb}</div>
+                  </div>
+                </div>
+              </button>
+            `;
+          })
+          .join("");
+
+        lucide.createIcons();
+      }
+
+      function openPanel() {
+        el.overlay.classList.remove("hidden");
+        el.slideover.classList.remove("hidden");
+        requestAnimationFrame(() => {
+          el.slideover.classList.remove("translate-x-full");
+          el.slideover.setAttribute("aria-hidden", "false");
+        });
+        document.body.style.overflow = "hidden";
+      }
+
+      function closePanel() {
+        el.slideover.classList.add("translate-x-full");
+        el.slideover.setAttribute("aria-hidden", "true");
+        window.setTimeout(() => {
+          el.slideover.classList.add("hidden");
+          el.overlay.classList.add("hidden");
+        }, 250);
+        document.body.style.overflow = "";
+      }
+
+      function pct(val, max) {
+        if (!max) return 0;
+        return Math.max(0, Math.min(100, Math.round((val / max) * 100)));
+      }
+
+      // Required by prompt: dynamically populate slide-over from JS data object
+      window.viewAthlete = function viewAthlete(id) {
+        const a = data.athletes.find((x) => x.id === id);
+        if (!a) return;
+        state.activeAthleteId = id;
+
+        el.panelName.textContent = a.name;
+        el.panelMeta.textContent = `${a.role} • ${a.position} • ${a.grade}`;
+        el.panelObservation.textContent = a.observation || "—";
+
+        const isElite = Boolean(a.elite);
+        el.panelElite.classList.toggle("hidden", !isElite);
+        el.panelElite.classList.toggle("inline-flex", isElite);
+
+        el.panelHealthText.textContent = a.health.status;
+        el.panelHealthNote.textContent = a.health.note || "—";
+        el.panelHealthDot.className = `size-2 rounded-full ${healthDot(a.health.tone)}`;
+
+        const maxPts = Math.max(...data.athletes.map((x) => x.stats.pts));
+        const maxAst = Math.max(...data.athletes.map((x) => x.stats.ast));
+        const maxReb = Math.max(...data.athletes.map((x) => x.stats.reb));
+        const pPts = pct(a.stats.pts, maxPts);
+        const pAst = pct(a.stats.ast, maxAst);
+        const pReb = pct(a.stats.reb, maxReb);
+
+        el.panelPtsBar.style.width = `${pPts}%`;
+        el.panelAstBar.style.width = `${pAst}%`;
+        el.panelRebBar.style.width = `${pReb}%`;
+        el.panelPtsLabel.textContent = `${a.stats.pts} (${pPts}%)`;
+        el.panelAstLabel.textContent = `${a.stats.ast} (${pAst}%)`;
+        el.panelRebLabel.textContent = `${a.stats.reb} (${pReb}%)`;
+
+        openPanel();
+        lucide.createIcons();
+      };
+
+      function openModal(prefillAthleteId) {
+        el.modalRoot.classList.remove("hidden");
+        document.body.style.overflow = "hidden";
+        if (prefillAthleteId) el.athleteSelect.value = prefillAthleteId;
+      }
+
+      function closeModal() {
+        el.modalRoot.classList.add("hidden");
+        document.body.style.overflow = "";
+        el.recordForm.reset();
+        el.pointsInput.value = 0;
+        el.assistsInput.value = 0;
+        el.reboundsInput.value = 0;
+        el.trendInput.value = "up";
+      }
+
+      function populateAthleteSelect() {
+        el.athleteSelect.innerHTML = data.athletes
+          .map((a) => `<option value="${escapeHtml(a.id)}">${escapeHtml(a.name)}</option>`)
+          .join("");
+      }
+
+      function saveRecord({ athleteId, pts, ast, reb, trend, observation }) {
+        const a = data.athletes.find((x) => x.id === athleteId);
+        if (!a) return;
+        a.stats.pts += pts;
+        a.stats.ast += ast;
+        a.stats.reb += reb;
+        a.trend = trend || a.trend;
+        if (observation && observation.trim()) a.observation = observation.trim();
+
+        // If user just boosted, they might become elite later; keep explicit elite unless changed.
+        renderSpotlight();
+        renderRoster();
+
+        if (state.activeAthleteId === athleteId) {
+          viewAthlete(athleteId);
+        }
+      }
+
+      el.searchInput.addEventListener("input", renderRoster);
+
+      el.exportBtn.addEventListener("click", () => {
+        toast("Export queued (demo).");
+      });
+
+      el.addRecordBtn.addEventListener("click", () => openModal(state.activeAthleteId));
+      el.panelAddRecordBtn.addEventListener("click", () => openModal(state.activeAthleteId));
+      el.panelExportBtn.addEventListener("click", () => toast("Export queued (demo)."));
+
+      el.overlay.addEventListener("click", closePanel);
+      el.closePanelBtn.addEventListener("click", closePanel);
+
+      el.closeModalBtn.addEventListener("click", closeModal);
+      el.cancelBtn.addEventListener("click", closeModal);
+      el.modalRoot.addEventListener("click", (e) => {
+        if (e.target === el.modalRoot.firstElementChild) closeModal();
+      });
+
+      el.recordForm.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const athleteId = el.athleteSelect.value;
+        const pts = Number(el.pointsInput.value || 0);
+        const ast = Number(el.assistsInput.value || 0);
+        const reb = Number(el.reboundsInput.value || 0);
+        const trend = el.trendInput.value;
+        const observation = el.observationInput.value;
+
+        saveRecord({ athleteId, pts, ast, reb, trend, observation });
+        closeModal();
+        toast("Record saved.");
+      });
+
+      // Init
+      populateAthleteSelect();
+      renderSpotlight();
+      renderRoster();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

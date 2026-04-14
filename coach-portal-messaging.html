@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Basketball Coach Portal | Messaging</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: { sans: ["Inter", "ui-sans-serif", "system-ui"] },
+            colors: {
+              navy: "#0f172a",
+              brand: "#2563eb",
+              emerald: {
+                400: "#34d399",
+                500: "#10b981",
+              },
+              rose: {
+                400: "#fb7185",
+                500: "#f43f5e",
+              },
+            },
+            boxShadow: {
+              glow: "0 0 0 1px rgba(37, 99, 235, 0.35), 0 10px 30px rgba(0,0,0,0.35)",
+            },
+          },
+        },
+      };
+    </script>
+
+    <!-- Lucide icons (non-React build; same icon set) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+  </head>
+  <body class="bg-navy text-slate-100 font-sans">
+    <div class="min-h-dvh">
+      <!-- Top bar -->
+      <header class="sticky top-0 z-40 border-b border-white/10 bg-navy/90 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+              <div class="grid size-10 place-items-center rounded-xl bg-brand/15 ring-1 ring-brand/35">
+                <i data-lucide="message-square" class="size-5 text-brand"></i>
+              </div>
+              <div>
+                <div class="text-sm text-slate-300">Basketball Coach Portal</div>
+                <h1 class="text-lg font-semibold tracking-tight">Messaging System</h1>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button
+                id="btnToggleThemeHint"
+                type="button"
+                class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-medium text-slate-100 hover:bg-white/10"
+                title="Demo-only control"
+              >
+                <i data-lucide="sparkles" class="size-4"></i>
+                Demo Data
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-12">
+          <!-- Left: Inbox -->
+          <aside class="lg:col-span-4">
+            <div class="rounded-2xl border border-white/10 bg-white/5 shadow-glow">
+              <div class="flex items-center justify-between border-b border-white/10 px-4 py-4">
+                <div>
+                  <div class="text-xs uppercase tracking-wider text-slate-300">Inbox</div>
+                  <div class="text-base font-semibold">Threads</div>
+                </div>
+                <div class="inline-flex items-center gap-2 rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-200 ring-1 ring-white/10">
+                  <span class="inline-flex size-2 rounded-full bg-emerald-400"></span>
+                  Online
+                </div>
+              </div>
+
+              <div class="px-4 py-3">
+                <div class="relative">
+                  <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"></i>
+                  <input
+                    id="searchInput"
+                    type="text"
+                    placeholder="Search athlete or parent…"
+                    class="w-full rounded-xl border border-white/10 bg-navy/40 py-2.5 pl-10 pr-3 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25"
+                  />
+                </div>
+              </div>
+
+              <div id="threadList" class="max-h-[70dvh] overflow-auto px-2 pb-3"></div>
+            </div>
+          </aside>
+
+          <!-- Right: Chat -->
+          <section class="lg:col-span-8">
+            <div class="flex h-[78dvh] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-glow">
+              <!-- Sticky chat header -->
+              <div class="sticky top-0 z-30 border-b border-white/10 bg-navy/70 px-4 py-4 backdrop-blur">
+                <div class="flex items-center justify-between gap-3">
+                  <div class="flex min-w-0 items-center gap-3">
+                    <div id="activeAvatar" class="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/10">
+                      <span class="text-sm font-semibold">--</span>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="flex items-center gap-2">
+                        <div id="activeName" class="truncate text-base font-semibold">Select a thread</div>
+                        <span id="activeRoleTag" class="hidden rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-slate-200"></span>
+                      </div>
+                      <div class="mt-0.5 flex items-center gap-2 text-xs text-slate-300">
+                        <span id="activeStatusDot" class="inline-flex size-2 rounded-full bg-slate-500"></span>
+                        <span id="activeStatusText">—</span>
+                        <span class="text-slate-500">•</span>
+                        <span id="activeSubtitle" class="truncate">Open a conversation to start</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <button
+                      id="btnViewProfile"
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled
+                      title="View Profile"
+                    >
+                      <i data-lucide="user" class="size-4"></i>
+                      <span class="hidden sm:inline">View Profile</span>
+                    </button>
+                    <button
+                      id="btnAddNote"
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm font-semibold text-slate-100 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled
+                      title="Add Note"
+                    >
+                      <i data-lucide="sticky-note" class="size-4"></i>
+                      <span class="hidden sm:inline">Add Note</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Messages -->
+              <div id="messageList" class="flex-1 space-y-3 overflow-auto p-4"></div>
+
+              <!-- Composer -->
+              <div class="border-t border-white/10 bg-navy/60 p-4">
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-end gap-2">
+                    <div class="flex-1">
+                      <label class="sr-only" for="messageInput">Message</label>
+                      <textarea
+                        id="messageInput"
+                        rows="2"
+                        placeholder="Type a message…"
+                        class="max-h-40 w-full resize-none rounded-2xl border border-white/10 bg-navy/50 px-4 py-3 text-sm text-slate-100 placeholder:text-slate-400 outline-none focus:border-brand/60 focus:ring-2 focus:ring-brand/25 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled
+                      ></textarea>
+                      <div id="composerHint" class="mt-1 text-xs text-slate-400">Pick a thread from the inbox to start chatting.</div>
+                    </div>
+                    <button
+                      id="sendBtn"
+                      type="button"
+                      class="inline-flex items-center gap-2 rounded-2xl bg-brand px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-brand/90 disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled
+                    >
+                      <i data-lucide="send" class="size-4"></i>
+                      Send
+                    </button>
+                  </div>
+
+                  <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                      <i data-lucide="info" class="size-4"></i>
+                      Coach messages are saved to the active thread (demo-only).
+                    </div>
+                    <div class="flex flex-col gap-2 sm:flex-row">
+                      <button
+                        id="quickFeedbackBtn"
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-400 hover:bg-emerald-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled
+                      >
+                        <i data-lucide="thumbs-up" class="size-4"></i>
+                        Send Quick Feedback
+                      </button>
+                      <button
+                        id="flagBtn"
+                        type="button"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-sm font-semibold text-rose-400 hover:bg-rose-500/15 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled
+                      >
+                        <i data-lucide="flag" class="size-4"></i>
+                        Flag for Attention
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div id="toast" class="pointer-events-none fixed bottom-4 left-1/2 z-50 hidden -translate-x-1/2">
+              <div class="rounded-2xl border border-white/10 bg-navy/90 px-4 py-3 text-sm text-slate-100 shadow-glow backdrop-blur">
+                <span id="toastText">Saved.</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script>
+      const state = {
+        activeId: null,
+        threads: [
+          {
+            id: "t1",
+            name: "A. Santos",
+            role: "Athlete",
+            status: "online",
+            subtitle: "Varsity • PG • Grade 11",
+            messages: [
+              { from: "recipient", text: "Coach, can you review my last game clip?", at: "08:12 PM" },
+              { from: "coach", text: "Yes. Send the link and I’ll give notes tonight.", at: "08:14 PM" },
+              { from: "recipient", text: "Thank you! Also, should I focus more on ball handling?", at: "08:16 PM" },
+            ],
+            lastAt: "08:16 PM",
+            needsAttention: false,
+          },
+          {
+            id: "t2",
+            name: "M. Reyes (Parent)",
+            role: "Parent",
+            status: "offline",
+            subtitle: "Parent of J. Reyes • Grade 10",
+            messages: [
+              { from: "recipient", text: "Coach, what’s the training schedule for next week?", at: "06:02 PM" },
+              { from: "coach", text: "Mon/Wed/Fri at 5:30 PM. Saturday scrimmage 9 AM.", at: "06:08 PM" },
+            ],
+            lastAt: "06:08 PM",
+            needsAttention: false,
+          },
+          {
+            id: "t3",
+            name: "K. Dela Cruz",
+            role: "Athlete",
+            status: "busy",
+            subtitle: "JV • C • Grade 9",
+            messages: [
+              { from: "recipient", text: "Coach, my knee feels sore after practice.", at: "04:21 PM" },
+              { from: "coach", text: "Stop high-impact work today. Ice 15 mins, and see the trainer tomorrow.", at: "04:26 PM" },
+            ],
+            lastAt: "04:26 PM",
+            needsAttention: true,
+          },
+          {
+            id: "t4",
+            name: "S. Villanueva",
+            role: "Athlete",
+            status: "online",
+            subtitle: "Varsity • SG • Grade 12",
+            messages: [
+              { from: "coach", text: "Great hustle in today’s drill. Keep the intensity.", at: "02:05 PM" },
+              { from: "recipient", text: "Thanks coach! I’ll keep working.", at: "02:06 PM" },
+            ],
+            lastAt: "02:06 PM",
+            needsAttention: false,
+          },
+        ],
+      };
+
+      const el = {
+        threadList: document.getElementById("threadList"),
+        searchInput: document.getElementById("searchInput"),
+        messageList: document.getElementById("messageList"),
+        messageInput: document.getElementById("messageInput"),
+        sendBtn: document.getElementById("sendBtn"),
+        quickFeedbackBtn: document.getElementById("quickFeedbackBtn"),
+        flagBtn: document.getElementById("flagBtn"),
+        activeAvatar: document.getElementById("activeAvatar"),
+        activeName: document.getElementById("activeName"),
+        activeRoleTag: document.getElementById("activeRoleTag"),
+        activeStatusDot: document.getElementById("activeStatusDot"),
+        activeStatusText: document.getElementById("activeStatusText"),
+        activeSubtitle: document.getElementById("activeSubtitle"),
+        btnViewProfile: document.getElementById("btnViewProfile"),
+        btnAddNote: document.getElementById("btnAddNote"),
+        composerHint: document.getElementById("composerHint"),
+        toast: document.getElementById("toast"),
+        toastText: document.getElementById("toastText"),
+      };
+
+      function initials(name) {
+        const cleaned = String(name || "").replace(/\(.*?\)/g, "").trim();
+        const parts = cleaned.split(/\s+/).filter(Boolean);
+        const first = parts[0]?.[0] || "?";
+        const last = parts.length > 1 ? parts[parts.length - 1][0] : "";
+        return (first + last).toUpperCase();
+      }
+
+      function statusMeta(status) {
+        switch (status) {
+          case "online":
+            return { label: "Online", dot: "bg-emerald-400" };
+          case "busy":
+            return { label: "Busy", dot: "bg-rose-400" };
+          default:
+            return { label: "Offline", dot: "bg-slate-500" };
+        }
+      }
+
+      function toast(message) {
+        el.toastText.textContent = message;
+        el.toast.classList.remove("hidden");
+        window.clearTimeout(toast._t);
+        toast._t = window.setTimeout(() => el.toast.classList.add("hidden"), 1400);
+      }
+
+      function escapeHtml(str) {
+        return String(str)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function renderThreads() {
+        const q = el.searchInput.value.trim().toLowerCase();
+        const threads = state.threads
+          .filter((t) => (q ? (t.name + " " + t.role + " " + t.subtitle).toLowerCase().includes(q) : true))
+          .slice()
+          .sort((a, b) => (a.needsAttention === b.needsAttention ? 0 : a.needsAttention ? -1 : 1));
+
+        el.threadList.innerHTML = threads
+          .map((t) => {
+            const active = t.id === state.activeId;
+            const s = statusMeta(t.status);
+            const lastMsg = t.messages[t.messages.length - 1]?.text || "No messages yet.";
+            const roleTone = t.role === "Parent" ? "bg-white/5 text-slate-200 border-white/10" : "bg-brand/15 text-brand border-brand/30";
+            const attentionPill = t.needsAttention
+              ? `<span class="inline-flex items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[11px] font-semibold text-rose-400"><span class="inline-flex size-1.5 rounded-full bg-rose-400"></span>Attention</span>`
+              : "";
+
+            return `
+              <button
+                type="button"
+                class="group w-full rounded-2xl border px-3 py-3 text-left transition ${
+                  active
+                    ? "border-brand/40 bg-brand/10 ring-1 ring-brand/25"
+                    : "border-white/10 bg-white/0 hover:bg-white/5 hover:border-white/15"
+                }"
+                onclick="switchChat('${t.id}')"
+              >
+                <div class="flex items-start gap-3">
+                  <div class="relative grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 ring-1 ring-white/10">
+                    <span class="text-sm font-semibold">${escapeHtml(initials(t.name))}</span>
+                    <span class="absolute -bottom-0.5 -right-0.5 size-3 rounded-full border border-navy ${s.dot}"></span>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <div class="flex items-center gap-2">
+                          <div class="truncate text-sm font-semibold text-slate-100">${escapeHtml(t.name)}</div>
+                          <span class="rounded-full border px-2 py-0.5 text-[11px] font-semibold ${roleTone}">${escapeHtml(
+                            t.role
+                          )}</span>
+                        </div>
+                      </div>
+                      <div class="shrink-0 text-[11px] text-slate-400">${escapeHtml(t.lastAt || "")}</div>
+                    </div>
+                    <div class="mt-1 flex items-center justify-between gap-2">
+                      <div class="truncate text-xs text-slate-300">${escapeHtml(lastMsg)}</div>
+                      <div class="shrink-0">${attentionPill}</div>
+                    </div>
+                  </div>
+                </div>
+              </button>
+            `;
+          })
+          .join("");
+      }
+
+      function renderActiveHeader(thread) {
+        if (!thread) {
+          el.activeAvatar.innerHTML = `<span class="text-sm font-semibold">--</span>`;
+          el.activeName.textContent = "Select a thread";
+          el.activeRoleTag.classList.add("hidden");
+          el.activeStatusDot.className = "inline-flex size-2 rounded-full bg-slate-500";
+          el.activeStatusText.textContent = "—";
+          el.activeSubtitle.textContent = "Open a conversation to start";
+          return;
+        }
+
+        const s = statusMeta(thread.status);
+        el.activeAvatar.innerHTML = `<span class="text-sm font-semibold">${escapeHtml(initials(thread.name))}</span>`;
+        el.activeName.textContent = thread.name;
+        el.activeRoleTag.textContent = thread.role;
+        el.activeRoleTag.classList.remove("hidden");
+        el.activeRoleTag.className =
+          "rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-slate-200";
+        el.activeStatusDot.className = `inline-flex size-2 rounded-full ${s.dot}`;
+        el.activeStatusText.textContent = s.label;
+        el.activeSubtitle.textContent = thread.subtitle || "";
+      }
+
+      function renderMessages(thread) {
+        if (!thread) {
+          el.messageList.innerHTML = `
+            <div class="grid h-full place-items-center py-16">
+              <div class="max-w-md text-center">
+                <div class="mx-auto mb-3 grid size-12 place-items-center rounded-2xl bg-white/5 ring-1 ring-white/10">
+                  <i data-lucide="inbox" class="size-6 text-slate-300"></i>
+                </div>
+                <div class="text-base font-semibold">No conversation selected</div>
+                <div class="mt-1 text-sm text-slate-300">Choose a thread on the left to view and send messages.</div>
+              </div>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+
+        el.messageList.innerHTML = thread.messages
+          .map((m) => {
+            const isCoach = m.from === "coach";
+            const bubble =
+              isCoach
+                ? "ml-auto bg-brand text-white"
+                : "mr-auto bg-white text-slate-800";
+            const wrapper = isCoach ? "justify-end" : "justify-start";
+            const ts = m.at ? `<div class="mt-1 text-[11px] ${isCoach ? "text-white/70" : "text-slate-500"}">${escapeHtml(m.at)}</div>` : "";
+            return `
+              <div class="flex ${wrapper}">
+                <div class="max-w-[85%] sm:max-w-[70%]">
+                  <div class="rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm ${bubble}">
+                    ${escapeHtml(m.text)}
+                  </div>
+                  ${ts}
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+
+        requestAnimationFrame(() => {
+          el.messageList.scrollTop = el.messageList.scrollHeight;
+        });
+      }
+
+      function setComposerEnabled(enabled) {
+        el.messageInput.disabled = !enabled;
+        el.sendBtn.disabled = !enabled;
+        el.quickFeedbackBtn.disabled = !enabled;
+        el.flagBtn.disabled = !enabled;
+        el.btnViewProfile.disabled = !enabled;
+        el.btnAddNote.disabled = !enabled;
+        el.composerHint.textContent = enabled
+          ? "Press Enter to send (Shift+Enter for a new line)."
+          : "Pick a thread from the inbox to start chatting.";
+      }
+
+      // Required by prompt: swap conversation data without reload
+      window.switchChat = function switchChat(id) {
+        state.activeId = id;
+        const thread = state.threads.find((t) => t.id === id) || null;
+        renderThreads();
+        renderActiveHeader(thread);
+        renderMessages(thread);
+        setComposerEnabled(Boolean(thread));
+        if (thread) {
+          el.messageInput.focus();
+        }
+      };
+
+      function appendCoachMessage(text) {
+        const trimmed = String(text || "").trim();
+        if (!trimmed) return;
+        const thread = state.threads.find((t) => t.id === state.activeId);
+        if (!thread) return;
+
+        const d = new Date();
+        const at = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+        thread.messages.push({ from: "coach", text: trimmed, at });
+        thread.lastAt = at;
+
+        renderThreads();
+        renderMessages(thread);
+      }
+
+      el.sendBtn.addEventListener("click", () => {
+        appendCoachMessage(el.messageInput.value);
+        el.messageInput.value = "";
+      });
+
+      el.messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          if (el.sendBtn.disabled) return;
+          appendCoachMessage(el.messageInput.value);
+          el.messageInput.value = "";
+        }
+      });
+
+      el.quickFeedbackBtn.addEventListener("click", () => {
+        appendCoachMessage("Quick feedback: Great effort today—focus on spacing and strong finishes at the rim.");
+        toast("Quick feedback sent.");
+      });
+
+      el.flagBtn.addEventListener("click", () => {
+        const thread = state.threads.find((t) => t.id === state.activeId);
+        if (!thread) return;
+        thread.needsAttention = true;
+        renderThreads();
+        toast("Thread flagged for attention.");
+      });
+
+      el.btnViewProfile.addEventListener("click", () => {
+        const thread = state.threads.find((t) => t.id === state.activeId);
+        if (!thread) return;
+        toast(`Profile: ${thread.name}`);
+      });
+
+      el.btnAddNote.addEventListener("click", () => {
+        const thread = state.threads.find((t) => t.id === state.activeId);
+        if (!thread) return;
+        toast(`Note added for ${thread.name}`);
+      });
+
+      el.searchInput.addEventListener("input", renderThreads);
+
+      // Initial render
+      renderThreads();
+      renderActiveHeader(null);
+      renderMessages(null);
+      setComposerEnabled(false);
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

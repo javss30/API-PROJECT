@@ -1,0 +1,302 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        {% if user.is_superuser %}
+            <h1 class="display-5 fw-bold"><i class="fas fa-user-shield me-2 text-dark"></i>Admin Dashboard</h1>
+            <div class="d-flex align-items-center">
+                <div class="dropdown me-3">
+                    <button class="btn btn-outline-danger position-relative rounded-pill" type="button" id="notificationDropdown" data-bs-toggle="dropdown" aria-expanded="false" onclick="markAllNotificationsRead()">
+                        <i class="fas fa-bell"></i>
+                        {% if unread_notifications_count > 0 %}
+                            <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                {{ unread_notifications_count }}
+                                <span class="visually-hidden">unread notifications</span>
+                            </span>
+                        {% endif %}
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-4 p-3" aria-labelledby="notificationDropdown" style="width: 300px;">
+                        <li class="dropdown-header border-bottom pb-2 mb-2">
+                            <h6 class="mb-0 fw-bold text-dark">Recent Notifications</h6>
+                        </li>
+                        <div id="notification-list">
+                            {% for notification in all_recent_notifications %}
+                                <li class="mb-2 notification-item">
+                                    <div class="d-flex justify-content-between align-items-start p-2 rounded-3 {% if not notification.is_read %}bg-light-danger border-start border-4 border-danger unread-marker{% else %}bg-light{% endif %}">
+                                        <div class="me-2">
+                                            <div class="small fw-bold {% if not notification.is_read %}text-danger unread-text{% else %}text-dark{% endif %}">{{ notification.title }}</div>
+                                            <div class="small text-muted" style="font-size: 0.75rem;">{{ notification.message|truncatechars:60 }}</div>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% empty %}
+                                <li class="text-center py-3 text-muted small">No recent notifications</li>
+                            {% endfor %}
+                        </div>
+                        <li class="border-top pt-2 mt-2">
+                            <a href="{% url 'management:notification_history' %}" class="dropdown-item text-center text-primary fw-bold small rounded-3">View All History</a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="text-muted">Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong></div>
+            </div>
+        {% else %}
+            <h1 class="display-5 fw-bold"><i class="fas fa-user-tie me-2 text-primary"></i>Coach Dashboard</h1>
+            <div class="text-muted">Welcome back, <strong>{{ user.get_full_name|default:user.username }}</strong></div>
+        {% endif %}
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <a href="{% url 'management:athlete_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                    <div class="card-body p-4 bg-primary text-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-white text-primary rounded-3 p-3">
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Total Athletes</h6>
+                        <h2 class="display-6 fw-bold mb-0">{{ athletes_count }}</h2>
+                    </div>
+                    <div class="card-footer bg-white border-0 py-3">
+                        <span class="text-primary small fw-bold">
+                            View Athletes <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'management:training_session_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                    <div class="card-body p-4 bg-success text-white position-relative">
+                        {% if user.is_superuser and has_unread_sessions %}
+                            <div id="session-pulse" class="position-absolute top-0 end-0 p-3">
+                                <i class="fas fa-circle-exclamation text-danger fa-lg animate-pulse"></i>
+                            </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-white text-success rounded-3 p-3">
+                                <i class="fas fa-calendar-check fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Training Sessions</h6>
+                        <h2 class="display-6 fw-bold mb-0">{{ sessions_count }}</h2>
+                    </div>
+                    <div class="card-footer bg-white border-0 py-3">
+                        <span class="text-success small fw-bold">
+                            View Sessions <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{% url 'management:payment_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                    <div class="card-body p-4 bg-info text-white position-relative">
+                        {% if user.is_superuser and has_unread_payments %}
+                            <div id="revenue-pulse" class="position-absolute top-0 end-0 p-3">
+                                <i class="fas fa-circle-exclamation text-danger fa-lg animate-pulse"></i>
+                            </div>
+                        {% endif %}
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-white text-info rounded-3 p-3">
+                                <i class="fas fa-credit-card fa-2x"></i>
+                            </div>
+                        </div>
+                        <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Total Revenue</h6>
+                        <h2 class="display-6 fw-bold mb-0">${{ payments_total|floatformat:2 }}</h2>
+                    </div>
+                    <div class="card-footer bg-white border-0 py-3">
+                        <span class="text-info small fw-bold">
+                            View Payments <i class="fas fa-arrow-right ms-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+<script>
+function markAllNotificationsRead() {
+    const badge = document.getElementById('notification-badge');
+    const revenuePulse = document.getElementById('revenue-pulse');
+    const sessionPulse = document.getElementById('session-pulse');
+    
+    if (!badge && !revenuePulse && !sessionPulse) return; // Already read
+
+    fetch('{% url "management:mark_all_notifications_read" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+        }
+    }).then(response => {
+        if (response.ok) {
+            // Remove badge
+            if (badge) badge.remove();
+            // Remove pulse icons
+            if (revenuePulse) revenuePulse.remove();
+            if (sessionPulse) sessionPulse.remove();
+            
+            // Update items styling in dropdown
+            const unreadMarkers = document.querySelectorAll('.unread-marker');
+            unreadMarkers.forEach(el => {
+                el.classList.remove('bg-light-danger', 'border-start', 'border-4', 'border-danger', 'unread-marker');
+                el.classList.add('bg-light');
+            });
+            
+            const unreadTexts = document.querySelectorAll('.unread-text');
+            unreadTexts.forEach(el => {
+                el.classList.remove('text-danger', 'unread-text');
+                el.classList.add('text-dark');
+            });
+        }
+    });
+}
+</script>
+
+<style>
+    .bg-light-danger {
+        background-color: rgba(220, 53, 69, 0.1) !important;
+    }
+    .animate-pulse {
+        animation: pulse-red 2s infinite;
+    }
+    @keyframes pulse-red {
+        0% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.5; transform: scale(1.2); }
+        100% { opacity: 1; transform: scale(1); }
+    }
+</style>
+
+    <!-- Charts and Data Section -->
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Performance Analysis</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if chart_data_json %}
+                        <div id="admin-performance-chart"></div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-bar fa-4x text-light mb-3"></i>
+                            <p class="text-muted">No performance data available to display a chart.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Quick Actions</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-3">
+                        {% if user.is_superuser %}
+                            <a href="{% url 'management:admin_register_athlete' %}" class="btn btn-outline-success py-3 rounded-3 text-start">
+                                <i class="fas fa-running me-2 text-success"></i> Add New Athlete
+                            </a>
+                            <a href="{% url 'management:admin_register_coach' %}" class="btn btn-outline-primary py-3 rounded-3 text-start">
+                                <i class="fas fa-user-plus me-2 text-primary"></i> Add New Coach
+                            </a>
+                            <a href="{% url 'management:coach_list' %}" class="btn btn-outline-info py-3 rounded-3 text-start hover-fill-info">
+                                <i class="fas fa-user-tie me-2"></i> Manage Coaches
+                            </a>
+                            <a href="{% url 'management:athlete_list' %}" class="btn btn-outline-info py-3 rounded-3 text-start hover-fill-info">
+                                <i class="fas fa-running me-2"></i> Manage Athletes
+                            </a>
+                        {% else %}
+                            <a href="{% url 'management:athlete_create' %}" class="btn btn-outline-primary py-3 rounded-3 text-start">
+                                <i class="fas fa-user-plus me-2 text-primary"></i> Add New Athlete
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'management:training_session_create' %}" class="btn btn-outline-success py-3 rounded-3 text-start">
+                            <i class="fas fa-calendar-plus me-2 text-success"></i> Schedule Session
+                        </a>
+                        <a href="{% url 'management:payment_create' %}" class="btn btn-outline-info py-3 rounded-3 text-start">
+                            <i class="fas fa-plus-circle me-2 text-info"></i> Record Payment
+                        </a>
+                        <a href="{% url 'management:generate_report' %}" class="btn btn-outline-secondary py-3 rounded-3 text-start">
+                            <i class="fas fa-file-download me-2 text-secondary"></i> Download CSV Report
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if chart_data_json %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chartData = JSON.parse('{{ chart_data_json|safe }}');
+        
+        const options = {
+            series: chartData.series,
+            chart: {
+                height: 350,
+                type: 'area',
+                toolbar: { show: true },
+                fontFamily: 'inherit'
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 3 },
+            xaxis: {
+                categories: chartData.categories,
+                type: 'datetime'
+            },
+            theme: {
+                mode: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+            },
+            markers: { size: 4 }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#admin-performance-chart"), options);
+        chart.render();
+
+        document.getElementById('dark-mode-toggle').addEventListener('click', () => {
+            const isDark = document.body.classList.contains('dark-mode');
+            chart.updateOptions({
+                theme: { mode: isDark ? 'dark' : 'light' }
+            });
+        });
+    });
+</script>
+{% endif %}
+
+<style>
+    .icon-shape {
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .rounded-4 {
+        border-radius: 1rem !important;
+    }
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    /* Custom Hover Fill Effects */
+    .hover-fill-info:hover {
+        background-color: #0dcaf0 !important;
+        color: white !important;
+    }
+    .hover-fill-info:hover i {
+        color: white !important;
+    }
+</style>
+{% endblock %}

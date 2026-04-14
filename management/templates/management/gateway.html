@@ -1,0 +1,1048 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEC Athlete Portal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --ember: #ff8a1f;
+            --ember-strong: #ff640a;
+            --smoke: rgba(10, 6, 4, 0.72);
+            --smoke-soft: rgba(20, 12, 8, 0.48);
+            --text-soft: rgba(255, 245, 235, 0.78);
+            --line: rgba(255, 174, 92, 0.24);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: Arial, Helvetica, sans-serif;
+            background: #090604;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        .landing {
+            position: relative;
+            min-height: 100vh;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 50% 18%, rgba(255, 183, 92, 0.34), transparent 18%),
+                radial-gradient(circle at 46% 62%, rgba(255, 152, 47, 0.22), transparent 24%),
+                linear-gradient(180deg, rgba(8, 5, 4, 0.18), rgba(8, 5, 4, 0.42)),
+                url("{% static 'images/landing-page.jpeg' %}") center center / cover no-repeat;
+            filter: brightness(1.08) saturate(1.04);
+        }
+
+        .landing::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(90deg, rgba(8, 5, 4, 0.58) 0%, rgba(8, 5, 4, 0.14) 38%, rgba(8, 5, 4, 0.5) 100%);
+            pointer-events: none;
+        }
+
+        .landing::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                linear-gradient(180deg, rgba(255, 166, 71, 0.05), transparent 28%, transparent 72%, rgba(255, 119, 0, 0.1));
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+
+        .noise {
+            position: absolute;
+            inset: 0;
+            opacity: 0.14;
+            background-image:
+                radial-gradient(rgba(255,255,255,0.24) 0.8px, transparent 0.8px);
+            background-size: 9px 9px;
+            pointer-events: none;
+        }
+
+        .shell {
+            position: relative;
+            z-index: 2;
+            width: min(1240px, calc(100% - 36px));
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 24px;
+            padding: 24px 0 10px;
+        }
+
+        .nav-group {
+            display: flex;
+            align-items: center;
+            gap: clamp(18px, 2.4vw, 38px);
+        }
+
+        .nav-group.right {
+            justify-content: flex-end;
+        }
+
+        .nav-link {
+            position: relative;
+            color: rgba(255,255,255,0.84);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 900;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            transition: color 180ms ease, transform 180ms ease;
+        }
+
+        .nav-link::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--ember), #ffc16a);
+            transition: width 180ms ease;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .nav-link:hover::after {
+            width: 100%;
+        }
+
+        .brand {
+            text-align: center;
+            text-transform: uppercase;
+            font-weight: 1000;
+            letter-spacing: 0.08em;
+            font-size: clamp(1.8rem, 3vw, 3rem);
+            text-shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+        }
+
+        .brand-sub {
+            display: block;
+            margin-top: 6px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            letter-spacing: 0.24em;
+            color: rgba(255, 231, 208, 0.56);
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.78fr);
+            gap: 46px;
+            align-items: end;
+            min-height: calc(100vh - 110px);
+            padding: 20px 0 40px;
+        }
+
+        .left-stack,
+        .match-card {
+            transition: transform 220ms ease, box-shadow 220ms ease;
+            will-change: transform;
+        }
+
+        .eyebrow {
+            margin: 0 0 14px;
+            font-size: clamp(1rem, 1.8vw, 1.7rem);
+            letter-spacing: 0.06em;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.9);
+        }
+
+        .hero-title {
+            margin: 0;
+            font-size: clamp(4rem, 10vw, 8.8rem);
+            line-height: 0.88;
+            text-transform: uppercase;
+            font-weight: 1000;
+            letter-spacing: -0.06em;
+            max-width: 8ch;
+            text-shadow:
+                0 14px 50px rgba(0, 0, 0, 0.44),
+                0 2px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .hero-title span {
+            display: block;
+        }
+
+        .hero-word {
+            position: relative;
+            color: #f5eee2;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(244,236,224,0.96) 42%, rgba(214,205,191,0.88) 100%),
+                radial-gradient(circle at 18% 24%, rgba(84, 54, 36, 0.26) 0 4%, transparent 4.5%),
+                radial-gradient(circle at 67% 58%, rgba(76, 48, 32, 0.2) 0 3.5%, transparent 4%),
+                radial-gradient(circle at 41% 78%, rgba(93, 60, 39, 0.18) 0 3%, transparent 3.6%);
+            background-size: 100% 100%, 28px 28px, 34px 34px, 26px 26px;
+            background-position: center;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 10px 18px rgba(0, 0, 0, 0.32));
+        }
+
+        .hero-word::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background:
+                repeating-linear-gradient(104deg,
+                    rgba(0, 0, 0, 0.22) 0 2px,
+                    transparent 2px 16px),
+                radial-gradient(circle at 14% 32%, rgba(56, 36, 23, 0.34) 0 2.5%, transparent 3.5%),
+                radial-gradient(circle at 72% 66%, rgba(56, 36, 23, 0.28) 0 2%, transparent 3%),
+                radial-gradient(circle at 48% 84%, rgba(56, 36, 23, 0.24) 0 1.8%, transparent 2.6%);
+            background-size: auto, 32px 32px, 38px 38px, 26px 26px;
+            mix-blend-mode: multiply;
+            opacity: 0.42;
+            pointer-events: none;
+            -webkit-mask-image: linear-gradient(#000, #000);
+            -webkit-mask-clip: text;
+            mask-image: linear-gradient(#000, #000);
+            mask-clip: text;
+        }
+
+        .hero-copy {
+            max-width: 34rem;
+            margin: 22px 0 0;
+            color: var(--text-soft);
+            font-size: 1rem;
+            line-height: 1.75;
+        }
+
+        .cta-row {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+
+        .cta {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 30px;
+            border: 1px solid rgba(255, 225, 193, 0.14);
+            border-radius: 999px;
+            background: linear-gradient(135deg, var(--ember), var(--ember-strong));
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 1000;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            box-shadow: 0 22px 55px rgba(255, 100, 10, 0.34);
+            overflow: hidden;
+            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+        }
+
+        .cta::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.24) 42%, transparent 70%);
+            transform: translateX(-130%);
+            transition: transform 420ms ease;
+        }
+
+        .cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 28px 68px rgba(255, 100, 10, 0.42);
+            filter: brightness(1.04);
+        }
+
+        .cta:hover::before {
+            transform: translateX(130%);
+        }
+
+        .cta-note {
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255, 234, 215, 0.62);
+        }
+
+        .glass {
+            position: relative;
+            border: 1px solid var(--line);
+            border-radius: 30px;
+            background: linear-gradient(180deg, rgba(26, 15, 9, 0.54), rgba(12, 8, 6, 0.62));
+            backdrop-filter: blur(10px);
+            box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+            overflow: hidden;
+        }
+
+        .glass::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255, 178, 83, 0.11), transparent 38%, transparent 72%, rgba(255,255,255,0.03));
+            pointer-events: none;
+        }
+
+        .match-card {
+            padding: 28px;
+        }
+
+        .mini-label {
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: rgba(255, 230, 206, 0.64);
+        }
+
+        .match-heading {
+            margin: 14px 0 18px;
+            font-size: clamp(2rem, 4vw, 3.5rem);
+            line-height: 0.96;
+            text-transform: uppercase;
+            font-weight: 1000;
+            letter-spacing: -0.04em;
+        }
+
+        .versus {
+            display: grid;
+            grid-template-columns: 1fr auto 1fr;
+            align-items: center;
+            gap: 12px;
+            margin: 18px 0 28px;
+            font-size: clamp(1.6rem, 3vw, 2.5rem);
+            font-weight: 1000;
+            text-transform: uppercase;
+        }
+
+        .versus span:nth-child(2) {
+            color: rgba(255,255,255,0.52);
+            font-size: 1rem;
+            letter-spacing: 0.24em;
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .meta-item {
+            padding: 14px 14px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 187, 116, 0.12);
+        }
+
+        .meta-value {
+            margin-top: 8px;
+            font-size: 1.06rem;
+            font-weight: 900;
+        }
+
+        .pulse-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            margin-right: 10px;
+            background: var(--ember);
+            box-shadow: 0 0 0 rgba(255, 138, 31, 0.4);
+            animation: pulse 1.8s infinite;
+        }
+
+        .floating-tag {
+            position: absolute;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 999px;
+            background: rgba(18, 10, 7, 0.56);
+            border: 1px solid rgba(255, 176, 91, 0.18);
+            backdrop-filter: blur(12px);
+            font-size: 0.72rem;
+            font-weight: 900;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.82);
+            box-shadow: 0 12px 30px rgba(0,0,0,0.16);
+        }
+
+        .tag-left {
+            left: max(18px, calc(50% - 560px));
+            top: 118px;
+        }
+
+        .tag-right {
+            right: max(18px, calc(50% - 560px));
+            bottom: 34px;
+        }
+
+        .scroll-cue {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            z-index: 2;
+            color: rgba(255, 228, 203, 0.46);
+            font-size: 0.68rem;
+            font-weight: 900;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        .scroll-line {
+            width: 2px;
+            height: 70px;
+            background: linear-gradient(180deg, rgba(255,255,255,0), rgba(255, 158, 48, 0.76), rgba(255,255,255,0));
+        }
+
+        .content-sections {
+            position: relative;
+            background:
+                radial-gradient(circle at top center, rgba(255, 138, 31, 0.08), transparent 18%),
+                linear-gradient(180deg, #090503 0%, #0c0705 100%);
+            padding: 80px 0 100px;
+        }
+
+        .section-block {
+            margin-bottom: 84px;
+        }
+
+        .section-title {
+            margin: 10px 0 28px;
+            font-size: clamp(2.2rem, 5vw, 4rem);
+            line-height: 1;
+            font-weight: 1000;
+            letter-spacing: -0.05em;
+        }
+
+        .news-grid,
+        .about-grid,
+        .players-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .news-grid,
+        .about-grid,
+        .players-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        .card-panel {
+            border: 1px solid rgba(255, 174, 92, 0.14);
+            background: linear-gradient(180deg, rgba(16, 10, 7, 0.86), rgba(10, 6, 4, 0.94));
+            box-shadow: 0 22px 60px rgba(0, 0, 0, 0.22);
+            transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+        }
+
+        .card-panel:hover {
+            transform: translateY(-6px);
+            border-color: rgba(255, 174, 92, 0.28);
+            box-shadow: 0 28px 70px rgba(0, 0, 0, 0.3);
+        }
+
+        .news-card,
+        .about-card {
+            padding: 28px;
+            border-radius: 28px;
+        }
+
+        .news-card h3,
+        .about-card h3 {
+            margin: 18px 0 12px;
+            font-size: 1.18rem;
+        }
+
+        .news-card p,
+        .about-card p {
+            margin: 0;
+            color: var(--text-soft);
+            line-height: 1.8;
+        }
+
+        .icon-box {
+            width: 72px;
+            height: 72px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--ember);
+            border: 1px solid rgba(255, 174, 92, 0.22);
+            font-size: 1.8rem;
+        }
+
+        .landing-player-card {
+            display: flex;
+            flex-direction: column;
+            min-height: 420px;
+            border-radius: 0;
+            overflow: hidden;
+        }
+
+        .landing-player-media {
+            position: relative;
+            min-height: 260px;
+            background:
+                linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0)),
+                linear-gradient(135deg, rgba(255, 125, 24, 0.03), transparent 45%);
+            overflow: hidden;
+        }
+
+        .landing-player-media img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+            transition: transform 240ms ease;
+        }
+
+        .landing-player-card:hover .landing-player-media img {
+            transform: scale(1.04);
+        }
+
+        .landing-player-image-slot {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 10px;
+            color: rgba(255, 224, 200, 0.46);
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+            font-size: 0.72rem;
+        }
+
+        .landing-player-info {
+            padding: 18px 14px 16px;
+        }
+
+        .landing-player-name {
+            margin: 0;
+            font-size: 1.08rem;
+            font-weight: 1000;
+        }
+
+        .landing-player-role {
+            margin-top: 4px;
+            color: rgba(255, 228, 204, 0.56);
+            font-size: 0.82rem;
+        }
+
+        .landing-player-stat {
+            margin-top: auto;
+            padding: 14px 14px 15px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            background: rgba(255,255,255,0.03);
+            font-size: 0.7rem;
+            letter-spacing: 0.08em;
+            color: rgba(255, 226, 198, 0.54);
+            text-transform: uppercase;
+        }
+
+        .schedule-list {
+            display: grid;
+            gap: 14px;
+        }
+
+        .match-row {
+            display: grid;
+            grid-template-columns: 110px minmax(0, 1.6fr) minmax(250px, 1fr);
+            align-items: center;
+            gap: 20px;
+            min-height: 70px;
+            padding: 0 18px 0 16px;
+            border-left: 2px solid rgba(255,255,255,0.14);
+            background: linear-gradient(180deg, rgba(14, 10, 8, 0.92), rgba(10, 7, 5, 0.98));
+            transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+        }
+
+        .match-row.featured,
+        .match-row:hover {
+            transform: translateX(6px);
+            border-left-color: var(--ember);
+            background: linear-gradient(180deg, rgba(30, 18, 13, 0.96), rgba(15, 10, 7, 0.99));
+        }
+
+        .match-date {
+            color: rgba(206, 187, 171, 0.7);
+            font-size: 0.8rem;
+        }
+
+        .match-teams {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            font-size: clamp(1.1rem, 2vw, 1.8rem);
+        }
+
+        .team-vs {
+            color: rgba(255,255,255,0.22);
+            text-transform: uppercase;
+            font-size: 0.9em;
+        }
+
+        .match-meta {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 18px;
+            flex-wrap: wrap;
+            color: rgba(255, 228, 204, 0.56);
+            font-size: 0.8rem;
+        }
+
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-chip i,
+        .status.next {
+            color: var(--ember);
+        }
+
+        .status.win {
+            color: #2dd36f;
+        }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(28px);
+            transition: opacity 650ms ease, transform 650ms ease;
+        }
+
+        .reveal.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 138, 31, 0.46); }
+            70% { box-shadow: 0 0 0 14px rgba(255, 138, 31, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 138, 31, 0); }
+        }
+
+        @media (max-width: 1100px) {
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 22px;
+                align-items: center;
+            }
+
+            .news-grid,
+            .about-grid,
+            .players-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .match-card {
+                max-width: 580px;
+            }
+
+            .tag-right {
+                bottom: 18px;
+            }
+        }
+
+        @media (max-width: 780px) {
+            .shell {
+                width: min(100% - 24px, 1240px);
+            }
+
+            .topbar {
+                grid-template-columns: 1fr;
+                justify-items: center;
+                gap: 16px;
+            }
+
+            .nav-group,
+            .nav-group.right {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .hero {
+                min-height: auto;
+                padding: 10px 0 30px;
+            }
+
+            .hero-title {
+                font-size: clamp(3.2rem, 20vw, 5.8rem);
+            }
+
+            .match-card {
+                padding: 22px;
+            }
+
+            .meta-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .match-row {
+                grid-template-columns: 1fr;
+                align-items: start;
+                gap: 12px;
+                padding: 16px;
+            }
+
+            .match-meta {
+                justify-content: flex-start;
+            }
+
+            .scroll-cue,
+            .floating-tag {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="landing" id="landingScene">
+        <div class="noise"></div>
+
+        <div class="floating-tag tag-left">
+            <span class="pulse-dot"></span>
+            Home Court Access
+        </div>
+
+        <div class="floating-tag tag-right">
+            <i class="fas fa-bolt"></i>
+            Unified Athlete Management
+        </div>
+
+        <div class="scroll-cue" aria-hidden="true">
+            <span>Portal</span>
+            <span class="scroll-line"></span>
+        </div>
+
+        <div class="shell">
+            <header class="topbar">
+                <nav class="nav-group">
+                    <a class="nav-link" href="#news">News</a>
+                    <a class="nav-link" href="#about">About</a>
+                </nav>
+
+                <div class="brand">
+                    CEC Dragons
+                    <span class="brand-sub">CEC Athlete Portal</span>
+                </div>
+
+                <nav class="nav-group right">
+                    <a class="nav-link" href="#players">Players</a>
+                    <a class="nav-link" href="#matches">Matches</a>
+                </nav>
+            </header>
+
+            <section class="hero">
+                <div class="left-stack" id="heroCopy">
+                    <p class="eyebrow">Strength. Speed. Spirit.</p>
+                    <h1 class="hero-title">
+                        <span class="hero-word">Home Of</span>
+                        <span class="hero-word">The Dragons</span>
+                    </h1>
+                    <p class="hero-copy" id="about">
+                        Train, monitor, and manage the full CEC ecosystem from one competitive portal.
+                        Track athlete profiles, attendance, performance analytics, and team operations in a single flow.
+                    </p>
+                    <div class="cta-row">
+                        <a href="{% url 'unified_login' %}" class="cta">
+                            <span>Get Started</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </a>
+                        <div class="cta-note">Authorized athletes, coaches, and admins only</div>
+                    </div>
+                </div>
+
+                <aside class="glass match-card" id="matches">
+                    <div class="mini-label">Next Match</div>
+                    <div class="match-heading">Dragons</div>
+                    <div class="versus">
+                        <span>Dragons</span>
+                        <span>VS</span>
+                        <span>UC</span>
+                    </div>
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <div class="mini-label">Date</div>
+                            <div class="meta-value">Sept 30</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="mini-label">Arena</div>
+                            <div class="meta-value">Titan Arena</div>
+                        </div>
+                        <div class="meta-item">
+                            <div class="mini-label">Time</div>
+                            <div class="meta-value">19:00</div>
+                        </div>
+                    </div>
+                </aside>
+            </section>
+        </div>
+</main>
+
+<section class="content-sections">
+    <div class="shell">
+        <section class="section-block reveal" id="news">
+            <p class="section-label">News</p>
+            <h2 class="section-title">Portal highlights</h2>
+            <div class="news-grid">
+                <article class="card-panel news-card">
+                    <div class="icon-box"><i class="fas fa-chart-line"></i></div>
+                    <h3>Unified performance tracking</h3>
+                    <p>Coaches and athletes now work from one shared portal for attendance, analytics, and progress monitoring.</p>
+                </article>
+                <article class="card-panel news-card">
+                    <div class="icon-box"><i class="fas fa-user-group"></i></div>
+                    <h3>Roster visibility</h3>
+                    <p>The public team experience now surfaces real athlete names and profile photos directly from your athlete records.</p>
+                </article>
+                <article class="card-panel news-card">
+                    <div class="icon-box"><i class="fas fa-calendar-days"></i></div>
+                    <h3>Match schedule access</h3>
+                    <p>Visitors can now explore the team’s upcoming schedule and recent results without leaving the landing page.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section-block reveal" id="about">
+            <p class="section-label">About The Team</p>
+            <h2 class="section-title">Built on strength, driven by spirit</h2>
+            <div class="about-grid">
+                <article class="card-panel about-card">
+                    <div class="icon-box"><i class="fas fa-trophy"></i></div>
+                    <h3>Championship legacy</h3>
+                    <p>Our team culture is built around discipline, consistency, and the confidence to compete with purpose every time we step on the court.</p>
+                </article>
+                <article class="card-panel about-card">
+                    <div class="icon-box"><i class="fas fa-users"></i></div>
+                    <h3>Elite athletes</h3>
+                    <p>We develop athletes through structure, accountability, and a competitive environment that rewards growth as much as results.</p>
+                </article>
+                <article class="card-panel about-card">
+                    <div class="icon-box"><i class="fas fa-bullseye"></i></div>
+                    <h3>Winning mindset</h3>
+                    <p>Every practice matters. Every session sharpens readiness. Every match becomes a chance to show preparation and identity.</p>
+                </article>
+            </div>
+        </section>
+
+        <section class="section-block reveal" id="players">
+            <p class="section-label">Players</p>
+            <h2 class="section-title">Meet the dragons</h2>
+            <div class="players-grid">
+                {% for player in featured_athletes %}
+                <article class="card-panel landing-player-card">
+                    <div class="landing-player-media">
+                        <div class="jersey">{{ player.jersey }}</div>
+                        {% if player.profile_picture %}
+                        <img src="{{ player.profile_picture }}" alt="{{ player.name }}">
+                        {% else %}
+                        <div class="landing-player-image-slot">
+                            <i class="fas fa-image"></i>
+                            <div>{{ player.username }}</div>
+                            <div>Profile image slot</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="landing-player-info">
+                        <div class="accent-dots">••</div>
+                        <h3 class="landing-player-name">{{ player.name }}</h3>
+                        <div class="landing-player-role">{{ player.role }}</div>
+                    </div>
+                    <div class="landing-player-stat">{{ player.stat_line }}</div>
+                </article>
+                {% empty %}
+                <article class="card-panel landing-player-card">
+                    <div class="landing-player-media">
+                        <div class="landing-player-image-slot">
+                            <i class="fas fa-users"></i>
+                            <div>No athletes available yet</div>
+                        </div>
+                    </div>
+                    <div class="landing-player-info">
+                        <div class="accent-dots">••</div>
+                        <h3 class="landing-player-name">Awaiting roster</h3>
+                        <div class="landing-player-role">Add athletes from the dashboard</div>
+                    </div>
+                    <div class="landing-player-stat">Player cards will appear automatically</div>
+                </article>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="section-block reveal" id="matches">
+            <p class="section-label">Season Schedule</p>
+            <h2 class="section-title">Upcoming matches</h2>
+            <div class="schedule-list">
+                <article class="match-row featured">
+                    <div class="match-date">Sept 30</div>
+                    <div class="match-teams">
+                        <span>DRAGONS</span><span class="team-vs">vs</span><span>UC</span>
+                    </div>
+                    <div class="match-meta">
+                        <span class="meta-chip"><i class="fas fa-location-dot"></i><span>Titan Arena</span></span>
+                        <span class="meta-chip"><i class="fas fa-clock"></i><span>19:00</span></span>
+                        <span class="status next">Next Match</span>
+                    </div>
+                </article>
+                <article class="match-row">
+                    <div class="match-date">Oct 7</div>
+                    <div class="match-teams">
+                        <span>DRAGONS</span><span class="team-vs">vs</span><span>Thunder</span>
+                    </div>
+                    <div class="match-meta">
+                        <span class="meta-chip"><i class="fas fa-location-dot"></i><span>Volt Stadium</span></span>
+                        <span class="meta-chip"><i class="fas fa-clock"></i><span>18:30</span></span>
+                    </div>
+                </article>
+                <article class="match-row">
+                    <div class="match-date">Oct 14</div>
+                    <div class="match-teams">
+                        <span>DRAGONS</span><span class="team-vs">vs</span><span>Sharks</span>
+                    </div>
+                    <div class="match-meta">
+                        <span class="meta-chip"><i class="fas fa-location-dot"></i><span>Titan Arena</span></span>
+                        <span class="meta-chip"><i class="fas fa-clock"></i><span>19:00</span></span>
+                    </div>
+                </article>
+                <article class="match-row">
+                    <div class="match-date">Sept 23</div>
+                    <div class="match-teams">
+                        <span>DRAGONS</span><span class="team-vs">vs</span><span>Titans</span>
+                    </div>
+                    <div class="match-meta">
+                        <span class="meta-chip"><i class="fas fa-location-dot"></i><span>Titan Arena</span></span>
+                        <span class="meta-chip"><i class="fas fa-clock"></i><span>19:00</span></span>
+                        <span class="status win">W 3-1</span>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </div>
+</section>
+
+    <script>
+        (function () {
+            const scene = document.getElementById('landingScene');
+            const heroCopy = document.getElementById('heroCopy');
+            const matchCard = document.getElementById('matches');
+            const revealItems = Array.from(document.querySelectorAll('.reveal'));
+            const interactiveCards = document.querySelectorAll('.card-panel, .match-row');
+
+            const observer = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (!entry.isIntersecting) {
+                        return;
+                    }
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                });
+            }, { threshold: 0.14 });
+
+            revealItems.forEach(function (item) {
+                if (!item.classList.contains('is-visible')) {
+                    observer.observe(item);
+                }
+            });
+
+            if (!scene || !heroCopy || !matchCard) {
+                interactiveCards.forEach(function (card) {
+                    card.addEventListener('mousemove', function (event) {
+                        const rect = card.getBoundingClientRect();
+                        const x = ((event.clientX - rect.left) / rect.width) - 0.5;
+                        const y = ((event.clientY - rect.top) / rect.height) - 0.5;
+                        card.style.transform = 'perspective(900px) rotateX(' + (y * -3) + 'deg) rotateY(' + (x * 4) + 'deg) translateY(-4px)';
+                    });
+
+                    card.addEventListener('mouseleave', function () {
+                        card.style.transform = '';
+                    });
+                });
+                return;
+            }
+
+            let rafId = null;
+
+            function applyMotion(x, y) {
+                heroCopy.style.transform = 'translate3d(' + (x * -14) + 'px,' + (y * -10) + 'px,0)';
+                matchCard.style.transform = 'translate3d(' + (x * 18) + 'px,' + (y * 12) + 'px,0)';
+            }
+
+            scene.addEventListener('mousemove', function (event) {
+                const rect = scene.getBoundingClientRect();
+                const x = ((event.clientX - rect.left) / rect.width) - 0.5;
+                const y = ((event.clientY - rect.top) / rect.height) - 0.5;
+
+                if (rafId) {
+                    cancelAnimationFrame(rafId);
+                }
+
+                rafId = requestAnimationFrame(function () {
+                    applyMotion(x, y);
+                });
+            });
+
+            scene.addEventListener('mouseleave', function () {
+                heroCopy.style.transform = '';
+                matchCard.style.transform = '';
+            });
+
+            interactiveCards.forEach(function (card) {
+                card.addEventListener('mousemove', function (event) {
+                    if (card === matchCard) {
+                        return;
+                    }
+                    const rect = card.getBoundingClientRect();
+                    const x = ((event.clientX - rect.left) / rect.width) - 0.5;
+                    const y = ((event.clientY - rect.top) / rect.height) - 0.5;
+                    card.style.transform = 'perspective(900px) rotateX(' + (y * -3) + 'deg) rotateY(' + (x * 4) + 'deg) translateY(-4px)';
+                });
+
+                card.addEventListener('mouseleave', function () {
+                    if (card === matchCard) {
+                        return;
+                    }
+                    card.style.transform = '';
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

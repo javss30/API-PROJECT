@@ -1,0 +1,74 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-5">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0 fw-bold"><i class="fas fa-user-tie me-2"></i>Coach Login</h2>
+                    <p class="mb-0 opacity-75">Sign in to your administration panel</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    {% if form.errors %}
+                        <div class="alert alert-danger rounded-3 small">
+                            <i class="fas fa-exclamation-circle me-2"></i>Invalid username or password.
+                        </div>
+                    {% endif %}
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="login-form mb-3">
+                            {% bootstrap_form form %}
+                        </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-muted small">Don't have a coach account? <a href="{% url 'signup' %}" class="text-primary fw-bold text-decoration-none">Register here</a></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="{% url 'home' %}" class="text-muted text-decoration-none small"><i class="fas fa-arrow-left me-1"></i>Back to Selection</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .login-form .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .login-form .form-control {
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+    }
+    /* Dark Mode Styling */
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .login-form .form-control {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+    body.dark-mode .text-muted {
+        color: #adb5bd !important;
+    }
+</style>
+{% endblock %}

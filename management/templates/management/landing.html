@@ -1,0 +1,106 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5 mt-5">
+    <div class="row align-items-center g-5">
+        <div class="col-lg-6 text-center text-lg-start">
+            <h1 class="display-3 fw-bold lh-1 mb-3 text-primary">Coach Portal</h1>
+            <p class="lead mb-4 fs-4 text-muted">A dedicated management system for coaches and administrators. Manage athlete records, track sessions, and monitor financial performance with ease.</p>
+            <div class="d-grid gap-2 d-md-flex justify-content-md-start mb-4">
+                {% if user.is_authenticated %}
+                    <a href="{% url 'management:dashboard' %}" class="btn btn-primary btn-lg px-4 me-md-2 rounded-pill shadow-sm">
+                        <i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard
+                    </a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg px-4 me-md-2 rounded-pill shadow-sm">
+                        <i class="fas fa-sign-in-alt me-2"></i>Coach Login
+                    </a>
+                    <a href="{% url 'signup' %}" class="btn btn-outline-secondary btn-lg px-4 rounded-pill">
+                        <i class="fas fa-user-plus me-2"></i>Register Coach
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3">
+                        <div class="card-body">
+                            <div class="feature-icon bg-primary bg-gradient text-white rounded-3 mb-3 d-inline-flex align-items-center justify-content-center p-3">
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                            <h3 class="h4 fw-bold">Athlete Database</h3>
+                            <p class="text-muted mb-0">Maintain comprehensive records of all your athletes in one place.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3">
+                        <div class="card-body">
+                            <div class="feature-icon bg-success bg-gradient text-white rounded-3 mb-3 d-inline-flex align-items-center justify-content-center p-3">
+                                <i class="fas fa-chart-line fa-2x"></i>
+                            </div>
+                            <h3 class="h4 fw-bold">Performance Tracking</h3>
+                            <p class="text-muted mb-0">Analyze and visualize performance metrics over time.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3">
+                        <div class="card-body">
+                            <div class="feature-icon bg-info bg-gradient text-white rounded-3 mb-3 d-inline-flex align-items-center justify-content-center p-3">
+                                <i class="fas fa-calendar-check fa-2x"></i>
+                            </div>
+                            <h3 class="h4 fw-bold">Training Sessions</h3>
+                            <p class="text-muted mb-0">Schedule and manage training sessions efficiently.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 p-3">
+                        <div class="card-body">
+                            <div class="feature-icon bg-warning bg-gradient text-white rounded-3 mb-3 d-inline-flex align-items-center justify-content-center p-3">
+                                <i class="fas fa-credit-card fa-2x"></i>
+                            </div>
+                            <h3 class="h4 fw-bold">Payment Management</h3>
+                            <p class="text-muted mb-0">Keep track of athlete payments and financial records.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .feature-icon {
+        width: 60px;
+        height: 60px;
+    }
+    .rounded-4 {
+        border-radius: 1.5rem !important;
+    }
+    .card {
+        transition: transform 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-10px);
+    }
+    /* Dark Mode Visibility Fixes */
+    body.dark-mode .text-muted {
+        color: #adb5bd !important;
+    }
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+    }
+    body.dark-mode h1, body.dark-mode h3 {
+        color: #f8f9fa !important;
+    }
+    body.dark-mode .display-3 {
+        color: #0d6efd !important; /* Keep the main title blue but visible */
+    }
+</style>
+{% endblock %}

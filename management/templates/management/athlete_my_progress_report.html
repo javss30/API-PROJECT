@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Progress Report — {{ athlete.user.get_full_name|default:athlete.user.username }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 16px; background: #fff; }
+        }
+        body { background: #f1f5f9; }
+    </style>
+</head>
+<body>
+    <div class="container bg-white shadow-sm p-4 p-md-5 my-4 rounded-3">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 border-bottom pb-4 mb-4">
+            <div>
+                <h1 class="h3 fw-bold text-primary mb-1">Athlete Progress Report</h1>
+                <p class="text-muted mb-0 small">Generated for your portal — {{ today|date:"F j, Y" }}</p>
+            </div>
+            <div class="text-end small">
+                <p class="mb-0 fw-bold">{{ athlete.user.get_full_name|default:athlete.user.username }}</p>
+                <p class="mb-0 text-muted">Sport focus: {{ current_sport }}</p>
+                <p class="mb-0 text-muted">Jersey {{ athlete.jersey_number|default:"—" }}</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="border rounded-3 p-3 h-100 bg-light">
+                    <h2 class="h6 fw-bold text-uppercase text-secondary mb-3">Snapshot</h2>
+                    <ul class="list-unstyled small mb-0">
+                        <li class="mb-2"><strong>Weight:</strong> {{ athlete.weight|default:"—" }} kg</li>
+                        <li class="mb-2"><strong>Height:</strong> {{ athlete.height|default:"—" }} cm</li>
+                        <li class="mb-2"><strong>Injury status:</strong> {{ athlete.injury_status|default:"—" }}</li>
+                        <li class="mb-2"><strong>Completed sessions:</strong> {{ sessions_completed }}</li>
+                        <li><strong>Stat line (record):</strong> Pts {{ basketball_stat.points }} / Ast {{ basketball_stat.assists }} / Reb {{ basketball_stat.rebounds }}</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-8">
+                <div class="border rounded-3 p-3 h-100">
+                    <h2 class="h6 fw-bold text-uppercase text-secondary mb-3">Coach feedback (evaluations)</h2>
+                    {% if evaluations %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Coach</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ev in evaluations %}
+                                <tr>
+                                    <td class="text-nowrap small">{{ ev.date|date:"M j, Y" }}</td>
+                                    <td class="small">{{ ev.coach.get_full_name|default:ev.coach.username }}</td>
+                                    <td class="small">{{ ev.notes|linebreaksbr }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted small mb-0">No evaluation notes on file yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h2 class="h6 fw-bold text-uppercase text-secondary mb-3">Season goals</h2>
+            {% if goals %}
+            <div class="table-responsive border rounded-3">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Goal</th>
+                            <th>Current</th>
+                            <th>Target</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for g in goals %}
+                        <tr>
+                            <td class="small">{{ g.title }}</td>
+                            <td class="small">{{ g.current_value }}</td>
+                            <td class="small">{{ g.target_value }}</td>
+                            <td class="small">{{ g.status }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted small">No goals listed.</p>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <h2 class="h6 fw-bold text-uppercase text-secondary mb-3">Game log (recent)</h2>
+            {% if game_records %}
+            <div class="table-responsive border rounded-3">
+                <table class="table table-sm mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Opponent</th>
+                            <th class="text-center">{{ stat_labels.l1 }}</th>
+                            <th class="text-center">{{ stat_labels.l2 }}</th>
+                            <th class="text-center">{{ stat_labels.l3 }}</th>
+                            <th class="text-center">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gr in game_records %}
+                        <tr>
+                            <td class="small text-nowrap">{{ gr.date|date:"M j, Y" }}</td>
+                            <td class="small">{{ gr.opponent }}</td>
+                            <td class="text-center small">{{ gr.points }}</td>
+                            <td class="text-center small">{{ gr.assists }}</td>
+                            <td class="text-center small">{{ gr.rebounds }}</td>
+                            <td class="text-center small">{% if gr.win %}W{% else %}L{% endif %}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted small">No games logged.</p>
+            {% endif %}
+        </div>
+
+        <div class="mb-4">
+            <h2 class="h6 fw-bold text-uppercase text-danger mb-3">Coach incident / report log</h2>
+            <p class="small text-muted">Confidential entries logged by coaching staff (same data as monitor progress “Report”).</p>
+            {% if incidents %}
+            <div class="table-responsive border border-danger border-opacity-25 rounded-3">
+                <table class="table table-sm mb-0">
+                    <thead class="table-danger">
+                        <tr>
+                            <th>Date</th>
+                            <th>Logged by</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for inc in incidents %}
+                        <tr>
+                            <td class="small text-nowrap">{{ inc.date|date:"M j, Y" }}</td>
+                            <td class="small">{% if inc.coach %}{{ inc.coach.user.get_full_name|default:inc.coach.user.username }}{% else %}—{% endif %}</td>
+                            <td class="small">{{ inc.description|linebreaksbr }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted small mb-0">No incident reports on file.</p>
+            {% endif %}
+        </div>
+
+        <div class="no-print text-center pt-4 border-top">
+            <button type="button" onclick="window.print()" class="btn btn-primary px-5 rounded-pill shadow-sm">
+                Print / Save as PDF
+            </button>
+            <a href="{% url 'management:athlete_dashboard' %}" class="btn btn-outline-secondary px-5 rounded-pill ms-2">Back to dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

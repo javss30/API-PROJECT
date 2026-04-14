@@ -1,0 +1,1572 @@
+{% load django_bootstrap5 %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ athlete.user.get_full_name|default:athlete.user.username }} | {{ current_sport }} Portal</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        // Apply theme immediately to prevent flash
+        if (localStorage.getItem('darkMode') === 'enabled') {
+            document.documentElement.classList.add('dark');
+            document.body.classList.add('dark-mode');
+        } else {
+            document.documentElement.classList.remove('dark');
+            document.body.classList.remove('dark-mode');
+        }
+    </script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['"Plus Jakarta Sans"', 'sans-serif'] },
+                    colors: {
+                        navy: '#0f172a',
+                        card: '#1e293b',
+                        brand: '#3b82f6',
+                        success: '#10b981',
+                        warning: '#f59e0b',
+                        danger: '#f43f5e',
+                    },
+                }
+            }
+        }
+    </script>
+    
+    <style>
+        body { background-color: #f8f9fa; color: #1e293b; transition: background-color 0.3s, color 0.3s; }
+        body.dark-mode { background-color: #0f172a; color: #f8f9fa; }
+        .glass-header { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(0,0,0,0.05); }
+        body.dark-mode .glass-header { background: rgba(15, 23, 42, 0.8); border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        body.dark-mode .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; }
+        .stat-card { background: white; border: 1px solid rgba(0,0,0,0.05); color: #1e293b; }
+        body.dark-mode .stat-card { background: #1e293b; border: 1px solid rgba(255,255,255,0.05); color: #f8f9fa; }
+        input::placeholder { color: #94a3b8; }
+        body.dark-mode input::placeholder { color: #64748b; }
+        @keyframes portalFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .portal-fade-in { animation: portalFadeIn 0.45s ease-out forwards; }
+        /* Athlete drawer: light panel (matches reference UI) */
+        .athlete-drawer-panel { font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
+        .athlete-drawer-item { transition: background-color 0.15s ease, color 0.15s ease; }
+    </style>
+</head>
+<body class="font-sans antialiased selection:bg-brand/30">
+    <script type="application/json" id="teammates-portal-data">{{ teammates_portal_json|safe }}</script>
+    <script type="application/json" id="teammate-threads-data">{{ teammate_threads_json|safe }}</script>
+    <script type="application/json" id="coaches-portal-data">{{ coaches_portal_json|safe }}</script>
+    <script type="application/json" id="coach-dm-threads-data">{{ coach_dm_threads_json|safe }}</script>
+
+    <!-- Side drawer: white panel + primary nav (matches athlete dashboard reference) -->
+    <div id="athleteSideDrawer" class="fixed inset-0 z-[100] invisible transition-all duration-300" aria-hidden="true">
+        <div id="athleteDrawerBackdrop" class="absolute inset-0 bg-slate-900/50 backdrop-blur-[2px] opacity-0 transition-opacity duration-300"></div>
+        <div id="athleteDrawerContent" class="athlete-drawer-panel absolute left-0 top-0 bottom-0 w-80 max-w-[min(20rem,90vw)] bg-white border-r border-slate-200 shadow-[4px_0_24px_rgba(15,23,42,0.08)] -translate-x-full transition-transform duration-300 ease-out flex flex-col text-slate-700">
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <div class="shrink-0 w-11 h-11 rounded-full bg-sky-100 flex items-center justify-center ring-1 ring-sky-200/80">
+                        <i data-lucide="activity" class="w-5 h-5 text-blue-600" aria-hidden="true"></i>
+                    </div>
+                    <span class="font-bold text-[15px] text-slate-800 tracking-tight truncate">Athlete Dashboard</span>
+                </div>
+                <button type="button" id="closeAthleteDrawer" class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/40" aria-label="Close menu">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <nav class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-1.5" aria-label="Main navigation">
+                <a href="{% url 'management:athlete_dashboard' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl bg-sky-50 text-blue-600 font-semibold text-[15px] border border-sky-100/80 shadow-sm">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5 shrink-0 text-blue-600" aria-hidden="true"></i>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="{% url 'management:training_session_list' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] hover:bg-slate-50 hover:text-slate-800">
+                    <i data-lucide="calendar" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                    <span>Sessions</span>
+                    {% if unread_counts.session %}
+                    <span class="ml-auto w-2 h-2 rounded-full bg-rose-500 ring-4 ring-rose-500/20" title="New sessions scheduled"></span>
+                    {% endif %}
+                </a>
+                <a href="{% url 'management:payment_list' %}" data-drawer-nav="1" class="athlete-drawer-item flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] hover:bg-slate-50 hover:text-slate-800">
+                    <i data-lucide="credit-card" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                    <span>Payments</span>
+                    {% if unread_counts.payment %}
+                    <span class="ml-auto w-2 h-2 rounded-full bg-rose-500 ring-4 ring-rose-500/20" title="New payment alerts"></span>
+                    {% endif %}
+                </a>
+                <div class="pt-3 mt-2 border-t border-slate-100 space-y-1.5">
+                    <button type="button" id="btnTeamDiscovery" class="athlete-drawer-item w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] text-left hover:bg-slate-50 hover:text-slate-800">
+                        <i data-lucide="users-round" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                        <span>Team Discovery</span>
+                        {% if unread_counts.chat %}
+                        <span class="ml-auto w-2 h-2 rounded-full bg-rose-500 ring-4 ring-rose-500/20" id="teamDiscoveryDot" title="Unread messages"></span>
+                        {% endif %}
+                    </button>
+                    <button type="button" id="btnDrawerHelp" class="athlete-drawer-item w-full flex items-center gap-3.5 px-4 py-3.5 rounded-2xl text-slate-500 font-semibold text-[15px] text-left hover:bg-slate-50 hover:text-slate-800">
+                        <i data-lucide="life-buoy" class="w-5 h-5 shrink-0 text-slate-400" aria-hidden="true"></i>
+                        <span>Help &amp; Tips</span>
+                    </button>
+                </div>
+            </nav>
+            <div class="p-4 sm:p-5 border-t border-slate-100 shrink-0 bg-white">
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full flex items-center justify-center gap-2.5 py-3.5 px-4 bg-rose-50 text-rose-600 border border-rose-100 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-rose-100 transition-colors focus:outline-none focus:ring-2 focus:ring-rose-300/50">
+                        <i data-lucide="log-out" class="w-4 h-4" aria-hidden="true"></i> Sign Out
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass-header">
+        <div class="max-w-[1600px] mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-6">
+                <button id="athleteBurgerMenu" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="athleteDrawerContent" class="p-2.5 rounded-xl bg-white/95 dark:bg-slate-800/90 text-slate-700 dark:text-slate-100 border border-slate-200/90 dark:border-white/10 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700 hover:border-slate-300 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:ring-offset-2 dark:focus:ring-offset-slate-900">
+                    <i data-lucide="menu" class="w-6 h-6" aria-hidden="true"></i>
+                </button>
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-brand/20 rounded-xl">
+                        <i data-lucide="{{ sport_icon|default:'activity' }}" class="w-6 h-6 text-brand"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-extrabold tracking-tight uppercase leading-none">{{ current_sport }} PORTAL</h1>
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em] mt-1">Active Athlete Session</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-3">
+                <a href="{% url 'management:athlete_dashboard' %}" class="hidden sm:inline text-[11px] font-black uppercase tracking-widest text-slate-500 hover:text-brand transition-colors">Dashboard</a>
+                <button type="button" id="btnHeaderCoachDirectory" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-slate-800 text-white dark:bg-white/10 dark:border dark:border-white/15 text-[10px] font-black uppercase tracking-widest shadow-md hover:opacity-95 transition-all">
+                    <i data-lucide="user-round" class="w-4 h-4"></i> Coaches
+                </button>
+                <button type="button" id="btnHeaderTeamRoster" class="hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-brand text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/25 hover:bg-brand/90 transition-all">
+                    <i data-lucide="users" class="w-4 h-4"></i> Team Roster
+                </button>
+                <div class="hidden md:flex items-center gap-2 px-4 py-2 bg-success/10 text-success rounded-full border border-success/20">
+                    <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
+                    <span class="text-[10px] font-black uppercase tracking-widest">Season MVP Potential</span>
+                </div>
+                <button id="themeToggle" class="p-2.5 rounded-2xl bg-white/5 text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="moon" id="themeIcon" class="w-5 h-5"></i>
+                </button>
+                <form action="{% url 'logout' %}" method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="flex items-center gap-2 px-5 py-2.5 bg-danger/10 text-danger border border-danger/20 rounded-2xl font-bold text-sm hover:bg-danger hover:text-white transition-all">
+                        <i data-lucide="log-out" class="w-4 h-4"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-[1600px] mx-auto px-6 py-8">
+        <!-- Next Session (widget) -->
+        <div id="nextSessionWidget" class="mb-6 rounded-[2.5rem] border border-white/10 bg-gradient-to-br from-brand/15 to-white/5 dark:from-brand/20 dark:to-navy/40 p-6 md:p-8 shadow-xl transition-all duration-500 opacity-100">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div class="flex items-start gap-4">
+                    <div class="p-3 rounded-2xl bg-brand/20 text-brand">
+                        <i data-lucide="calendar-days" class="w-7 h-7"></i>
+                    </div>
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">Next Session</p>
+                        {% if next_session %}
+                        <p class="text-lg font-black text-slate-900 dark:text-white mt-1">{{ next_session.session_date|date:"l, M j, Y · g:i A" }}</p>
+                        <p class="text-xs font-bold text-slate-500 mt-1 line-clamp-2">{{ next_session.notes|truncatechars:120 }}</p>
+                        {% else %}
+                        <p class="text-lg font-black text-slate-900 dark:text-white mt-1">No upcoming session scheduled</p>
+                        <p class="text-xs font-bold text-slate-500 mt-1">Check with your coach for the next practice or game.</p>
+                        {% endif %}
+                    </div>
+                </div>
+                <a href="{% url 'management:training_session_list' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white/80 dark:bg-white/10 text-brand font-black text-[10px] uppercase tracking-widest hover:scale-[1.02] transition-transform border border-brand/20">
+                    <i data-lucide="list-tree" class="w-4 h-4"></i> View schedule
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column: Health & Goals -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- Health Card -->
+                <div class="stat-card p-6 rounded-[2rem] space-y-6">
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i>
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em]">Health & Readiness</h3>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="p-3 rounded-2xl bg-success/20 border border-success/30 text-center">
+                            <i data-lucide="check-circle" class="w-5 h-5 mx-auto text-success mb-1"></i>
+                            <span class="text-[8px] font-black uppercase text-success">Cleared</span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-warning/5 border border-white/5 text-center opacity-40">
+                            <i data-lucide="zap" class="w-5 h-5 mx-auto text-warning mb-1"></i>
+                            <span class="text-[8px] font-black uppercase">Observ</span>
+                        </div>
+                        <div class="p-3 rounded-2xl bg-danger/5 border border-white/5 text-center opacity-40">
+                            <i data-lucide="activity" class="w-5 h-5 mx-auto text-danger mb-1"></i>
+                            <span class="text-[8px] font-black uppercase">Injury</span>
+                        </div>
+                    </div>
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/5">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">Coach Evaluation</p>
+                        <p class="text-xs italic text-slate-300 leading-relaxed">
+                            "{{ activity_feed.0.notes|default:'No recent evaluation notes.' }}"
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Coach feedback & reports (monitor progress parity) -->
+                <div class="stat-card p-6 rounded-[2rem] space-y-4">
+                    <div class="flex items-center gap-2 text-slate-400">
+                        <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em]">Progress &amp; reports</h3>
+                    </div>
+                    <p class="text-[10px] text-slate-500 leading-relaxed">Review written feedback from coaches and official report entries. Open your printable progress summary anytime.</p>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button type="button" id="btnOpenCoachFeedback" class="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition shadow-lg shadow-blue-600/20 relative">
+                            {% if unread_counts.evaluation %}
+                            <span class="absolute top-3 right-3 w-2.5 h-2.5 bg-rose-500 border-2 border-blue-600 rounded-full" title="New feedback"></span>
+                            {% endif %}
+                            <i data-lucide="message-square" class="w-5 h-5"></i>
+                            <span class="font-black text-[9px] tracking-widest uppercase">Feedback</span>
+                        </button>
+                        <button type="button" id="btnOpenCoachReports" class="bg-rose-600 hover:bg-rose-700 text-white rounded-2xl p-4 flex flex-col items-center justify-center gap-2 transition shadow-lg shadow-rose-600/20 relative">
+                            {% if unread_counts.incident %}
+                            <span class="absolute top-3 right-3 w-2.5 h-2.5 bg-white border-2 border-rose-600 rounded-full" title="New incident report"></span>
+                            {% endif %}
+                            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                            <span class="font-black text-[9px] tracking-widest uppercase">Reports</span>
+                        </button>
+                    </div>
+                    <a href="{% url 'management:athlete_my_progress_report' %}" target="_blank" rel="noopener noreferrer" class="flex items-center justify-center gap-2 w-full py-3 rounded-2xl border border-white/10 text-[10px] font-black uppercase tracking-widest text-slate-200 hover:bg-white/5 transition-colors">
+                        <i data-lucide="file-text" class="w-4 h-4 text-brand"></i> My progress report
+                    </a>
+                </div>
+
+                <!-- Objectives Card -->
+                <div class="stat-card p-6 rounded-[2rem] space-y-6">
+                    <h3 class="text-xs font-black uppercase tracking-[0.2em] text-warning">Season Objectives</h3>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between text-[10px] font-black uppercase mb-2">
+                                <span>Points/Game</span>
+                                <span class="text-slate-400">18/22</span>
+                            </div>
+                            <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-warning rounded-full" style="width: 82%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] font-black uppercase mb-2">
+                                <span>Assists</span>
+                                <span class="text-slate-400">65/80</span>
+                            </div>
+                            <div class="h-1.5 bg-white/5 rounded-full overflow-hidden">
+                                <div class="h-full bg-brand rounded-full" style="width: 75%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column: Radar & History -->
+            <div class="lg:col-span-6 space-y-6">
+                <!-- DNA Card -->
+                <div id="dnaRadarSection" class="stat-card p-8 rounded-[2.5rem] relative overflow-hidden scroll-mt-28">
+                    <div class="flex items-center justify-between mb-2">
+                        <h3 class="text-sm font-black uppercase tracking-[0.2em] text-slate-400">Sport Performance DNA</h3>
+                        <span class="px-3 py-1 bg-brand/20 text-brand text-[8px] font-black uppercase tracking-widest rounded-lg border border-brand/30">Top Performer Candidate</span>
+                    </div>
+                    <div class="h-[350px] flex items-center justify-center">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div class="flex justify-between items-end mt-4">
+                        <div>
+                            <p class="text-[10px] font-bold text-brand uppercase tracking-widest mb-1">Current MVP Rating</p>
+                            <div class="text-5xl font-black tracking-tighter">9.4</div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">League Rank</p>
+                            <div class="text-3xl font-black tracking-tighter">#08 Overall</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Card -->
+                <div id="gameLogSection" class="stat-card rounded-[2.5rem] overflow-hidden scroll-mt-28">
+                    <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-warning/20 rounded-xl">
+                                <i data-lucide="edit-3" class="w-4 h-4 text-warning"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black uppercase tracking-[0.2em]">Historical Performance Log</h3>
+                                <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Competitive Play Tracking</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left">
+                            <thead>
+                                <tr class="text-[8px] font-black text-slate-500 uppercase tracking-widest bg-white/[0.02]">
+                                    <th class="px-6 py-4">Opponent</th>
+                                    <th class="px-6 py-4 text-center">Timeline</th>
+                                    <th class="px-6 py-4 text-center">Venue</th>
+                                    <th class="px-6 py-4 text-center">{{ stat_labels.l1|upper }}</th>
+                                    <th class="px-6 py-4 text-center">{{ stat_labels.l2|upper }}</th>
+                                    <th class="px-6 py-4 text-center">{{ stat_labels.l3|upper }}</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-white/5">
+                                {% for record in game_records %}
+                                <tr class="hover:bg-white/[0.02] transition-colors">
+                                    <td class="px-6 py-5">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-[10px] font-black text-brand">{{ record.opponent|slice:":2"|upper }}</div>
+                                            <div>
+                                                <div class="text-[11px] font-black uppercase">{{ record.opponent }}</div>
+                                                <div class="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Competitive Play</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-5 text-center text-[9px] font-bold text-slate-400 uppercase tracking-tighter">{{ record.date|date:"F d, Y" }}</td>
+                                    <td class="px-6 py-5 text-center text-[9px] font-bold text-slate-500 uppercase tracking-widest">{{ record.venue|truncatechars:12 }}</td>
+                                    <td class="px-6 py-5 text-center text-xs font-black text-brand">{{ record.points }}</td>
+                                    <td class="px-6 py-5 text-center text-xs font-black text-warning">{{ record.assists }}</td>
+                                    <td class="px-6 py-5 text-center text-xs font-black text-slate-300">{{ record.rebounds }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot class="bg-white/[0.02]">
+                                <tr class="text-[9px] font-black uppercase">
+                                    <td colspan="3" class="px-6 py-4 text-slate-500 tracking-widest">Season Accumulated Totals</td>
+                                    <td class="px-6 py-4 text-center text-brand">{{ totals.t1|default:"0" }}</td>
+                                    <td class="px-6 py-4 text-center text-warning">{{ totals.t2|default:"0" }}</td>
+                                    <td class="px-6 py-4 text-center text-slate-300">{{ totals.t3|default:"0" }}</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Profile & Chat -->
+            <div class="lg:col-span-3 space-y-6">
+                <!-- User Profile Card -->
+                <div class="stat-card p-8 rounded-[2.5rem] text-center relative overflow-hidden group">
+                    <div class="absolute top-4 right-4">
+                        <button class="p-2 rounded-xl bg-white/5 text-slate-500 hover:text-white transition-all">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="relative inline-block mb-6">
+                        {% if athlete.profile_picture %}
+                            <img src="{{ athlete.profile_picture.url }}" class="w-24 h-24 rounded-[2rem] object-cover ring-4 ring-white/5" alt="Profile">
+                        {% else %}
+                            <div class="w-24 h-24 rounded-[2rem] bg-brand/20 flex items-center justify-center">
+                                <i data-lucide="user" class="w-10 h-10 text-brand"></i>
+                            </div>
+                        {% endif %}
+                        <a href="{% url 'management:athlete_profile_update' %}" class="absolute top-0 right-0 w-8 h-8 bg-white/95 hover:bg-white rounded-xl border border-slate-200 flex items-center justify-center shadow-lg transition" title="Edit profile">
+                            <i data-lucide="pencil" class="w-4 h-4 text-slate-700"></i>
+                        </a>
+                    </div>
+                    <h2 class="text-2xl font-black tracking-tight mb-1">{{ athlete.user.get_full_name|default:athlete.user.username }}</h2>
+                    <div class="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold uppercase tracking-widest mb-6">
+                        <i data-lucide="map-pin" class="w-3 h-3"></i> {{ athlete.address|truncatechars:20|default:"Location Unset" }}
+                    </div>
+
+                    
+                    <div class="space-y-4 text-left">
+                        <div class="flex justify-between items-center px-2">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Weight</span>
+                            <span class="text-xs font-black">{{ athlete.weight|default:"--" }} kg</span>
+                        </div>
+                        <div class="flex justify-between items-center px-2">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Height</span>
+                            <span class="text-xs font-black">{{ athlete.height|default:"--" }} cm</span>
+                        </div>
+                        <div class="flex justify-between items-center px-2">
+                            <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Condition</span>
+                            <span class="text-[10px] font-black text-success uppercase tracking-widest">Excellent</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Card -->
+                <div id="coachChatSection" class="stat-card rounded-[2.5rem] overflow-hidden flex flex-col h-[400px] scroll-mt-28">
+                    <div class="p-5 border-b border-white/5 shrink-0">
+                        <div class="flex items-start gap-3">
+                            {% if primary_coach_for_chat %}
+                                {% if primary_coach_for_chat.profile_picture %}
+                                <img src="{{ primary_coach_for_chat.profile_picture.url }}" alt="" class="w-11 h-11 rounded-2xl object-cover ring-2 ring-brand/25 shrink-0 bg-slate-200" width="44" height="44" />
+                                {% else %}
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ primary_coach_for_chat.user.username|urlencode }}" alt="" class="w-11 h-11 rounded-2xl object-cover ring-2 ring-brand/25 shrink-0 bg-slate-200" width="44" height="44" />
+                                {% endif %}
+                                <div class="min-w-0 flex-1 pt-0.5">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <div class="flex items-center gap-2 flex-wrap min-w-0">
+                                            <h3 class="text-xs font-black uppercase tracking-[0.2em]">Coach Chat</h3>
+                                            {% if unread_coach_messages_count %}
+                                            <span class="relative flex h-2.5 w-2.5 shrink-0" title="{{ unread_coach_messages_count }} unread from coach">
+                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-rose-500/30"></span>
+                                            </span>
+                                            {% endif %}
+                                            <div class="w-1.5 h-1.5 bg-success rounded-full animate-pulse shrink-0" title="Active"></div>
+                                        </div>
+                                        <button type="button" id="btnCoachDiscoveryInline" class="shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-brand/15 text-brand border border-brand/30 hover:bg-brand/25 transition-colors">
+                                            Coach directory
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] font-bold text-slate-200 truncate mt-0.5">{{ primary_coach_for_chat.user.get_full_name|default:primary_coach_for_chat.user.username }}</p>
+                                    {% if primary_coach_for_chat.specialization %}
+                                    <p class="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-0.5 truncate">{{ primary_coach_for_chat.specialization }}</p>
+                                    {% endif %}
+                                    {% if sport_coaches_count > 1 %}
+                                    <p class="text-[9px] text-slate-500 mt-1 leading-snug">Quick reply below goes to your <strong>primary</strong> coach. Use <strong>Coach directory</strong> to message any {{ current_sport }} coach directly.</p>
+                                    {% else %}
+                                    <p class="text-[9px] text-slate-500 mt-1 leading-snug">Use <strong>Coach directory</strong> to browse all staff tied to your sports.</p>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="flex flex-col gap-2 w-full">
+                                    <div class="flex items-center justify-between gap-2 flex-wrap">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <h3 class="text-xs font-black uppercase tracking-[0.2em]">Coach Chat</h3>
+                                            {% if unread_coach_messages_count %}
+                                            <span class="relative flex h-2.5 w-2.5 shrink-0" title="{{ unread_coach_messages_count }} unread from coach">
+                                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                                                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500 ring-2 ring-rose-500/30"></span>
+                                            </span>
+                                            {% endif %}
+                                            <span class="text-[10px] font-bold text-amber-500/90">No primary coach for {{ current_sport }}</span>
+                                        </div>
+                                        <button type="button" id="btnCoachDiscoveryInlineNoPrimary" class="shrink-0 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-xl bg-brand/15 text-brand border border-brand/30 hover:bg-brand/25 transition-colors">
+                                            Coach directory
+                                        </button>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4 custom-scrollbar bg-white/[0.01] min-h-0" id="chatContainer">
+                        {% if not coach_chat_thread %}
+                        <div class="h-full min-h-[120px] flex flex-col items-center justify-center text-center px-4">
+                            <p class="text-[11px] font-medium text-slate-500">No messages yet. Say hello to your coach.</p>
+                        </div>
+                        {% endif %}
+                        {% for row in coach_chat_thread %}
+                            {% if row.is_mine %}
+                                <div class="flex flex-col items-end gap-1">
+                                    <div class="max-w-[85%] bg-brand text-white px-4 py-2.5 rounded-2xl rounded-tr-none text-[11px] font-medium shadow-lg shadow-brand/10">
+                                        {{ row.message.content }}
+                                    </div>
+                                    <span class="text-[8px] font-bold text-slate-600 uppercase">{{ row.message.timestamp|date:"h:i A" }}</span>
+                                </div>
+                            {% else %}
+                                <div class="flex items-end gap-2 max-w-[95%]">
+                                    {% if row.coach %}
+                                        {% if row.coach.profile_picture %}
+                                        <img src="{{ row.coach.profile_picture.url }}" alt="" class="w-8 h-8 rounded-xl object-cover shrink-0 ring-1 ring-white/10 bg-slate-700" width="32" height="32" />
+                                        {% else %}
+                                        <img src="https://api.dicebear.com/7.x/avataaars/svg?seed={{ row.coach.user.username|urlencode }}" alt="" class="w-8 h-8 rounded-xl object-cover shrink-0 ring-1 ring-white/10 bg-slate-700" width="32" height="32" />
+                                        {% endif %}
+                                    {% else %}
+                                        <div class="w-8 h-8 rounded-xl shrink-0 bg-white/10 grid place-items-center ring-1 ring-white/10">
+                                            <i data-lucide="user" class="w-4 h-4 text-slate-400"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex flex-col items-start gap-0.5 min-w-0 flex-1">
+                                        {% if row.coach %}
+                                        <span class="text-[9px] font-black uppercase tracking-wider text-brand/90 truncate max-w-full">{{ row.coach.user.get_full_name|default:row.coach.user.username }}</span>
+                                        {% endif %}
+                                        <div class="max-w-full bg-white/5 text-slate-200 px-4 py-2.5 rounded-2xl rounded-tl-none text-[11px] font-medium border border-white/5">
+                                            {{ row.message.content }}
+                                        </div>
+                                        <span class="text-[8px] font-bold text-slate-600 uppercase">{{ row.message.timestamp|date:"h:i A" }}</span>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <div class="p-4 border-t border-white/5 shrink-0">
+                        {% if primary_coach_for_chat %}
+                        <form method="post" class="relative">
+                            {% csrf_token %}
+                            <input type="hidden" name="send_message" value="1">
+                            <input type="text" name="message_content" placeholder="Message {{ primary_coach_for_chat.user.get_full_name|default:primary_coach_for_chat.user.username }}…" class="w-full bg-white/5 border-0 rounded-xl py-3 pl-4 pr-10 text-[11px] font-medium focus:ring-1 focus:ring-brand outline-none transition-all" autocomplete="off">
+                            <button type="submit" class="absolute right-2 top-2 p-1.5 text-brand hover:scale-110 transition-all" aria-label="Send message">
+                                <i data-lucide="send" class="w-4 h-4"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <p class="text-[10px] text-center text-slate-500 font-medium py-2">Add a {{ current_sport }} coach in the system to enable chat.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Teammate DM (from Team Talk — athlete-to-athlete, separate from Coach Chat) -->
+    <div id="teammateChatModal" class="fixed inset-0 z-[210] hidden flex items-end sm:items-center justify-center p-4 sm:p-6">
+        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" id="teammateChatBackdrop"></div>
+        <div class="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden portal-fade-in">
+            <div class="shrink-0 flex items-center gap-3 p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5">
+                <img id="teammateChatAvatar" src="" alt="" class="w-12 h-12 rounded-2xl object-cover border-2 border-brand/30 bg-slate-200 hidden" />
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Team Talk</p>
+                    <h3 id="teammateChatTitle" class="text-lg font-black text-navy dark:text-white truncate">Teammate</h3>
+                </div>
+                <button type="button" id="closeTeammateChat" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500" aria-label="Close">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="teammateChatScroll" class="flex-1 min-h-[200px] max-h-[45vh] overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/50 dark:bg-navy/40"></div>
+            <form method="post" class="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900">
+                {% csrf_token %}
+                <input type="hidden" name="send_teammate_message" value="1">
+                <input type="hidden" name="receiver_user_id" id="teammateReceiverUserId" value="">
+                <div class="flex gap-2">
+                    <input type="text" name="teammate_message_content" id="teammateMessageInput" autocomplete="off" placeholder="Message your teammate…" class="flex-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-4 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand/40" required>
+                    <button type="submit" class="shrink-0 px-5 py-3 rounded-2xl bg-brand text-white font-black text-[10px] uppercase tracking-widest hover:bg-brand/90 transition-colors">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Coach DM (per-coach thread from Coach directory) -->
+    <div id="coachChatModal" class="fixed inset-0 z-[215] hidden flex items-end sm:items-center justify-center p-4 sm:p-6">
+        <div class="absolute inset-0 bg-slate-950/70 backdrop-blur-sm" id="coachChatBackdrop"></div>
+        <div class="relative w-full max-w-lg max-h-[90vh] flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden portal-fade-in">
+            <div class="shrink-0 flex items-center gap-3 p-5 border-b border-slate-200 dark:border-white/10 bg-slate-50/80 dark:bg-white/5">
+                <img id="coachChatAvatar" src="" alt="" class="w-12 h-12 rounded-2xl object-cover border-2 border-brand/30 bg-slate-200 hidden" />
+                <div class="flex-1 min-w-0">
+                    <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Coach message</p>
+                    <h3 id="coachChatTitle" class="text-lg font-black text-navy dark:text-white truncate">Coach</h3>
+                </div>
+                <button type="button" id="closeCoachChatModalBtn" class="p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-white/10 text-slate-500" aria-label="Close">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div id="coachChatScroll" class="flex-1 min-h-[200px] max-h-[45vh] overflow-y-auto p-4 space-y-3 custom-scrollbar bg-slate-50/50 dark:bg-navy/40"></div>
+            <form method="post" class="shrink-0 p-4 border-t border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900">
+                {% csrf_token %}
+                <input type="hidden" name="send_message" value="1">
+                <input type="hidden" name="receiver_coach_user_id" id="coachReceiverUserId" value="">
+                <div class="flex gap-2">
+                    <input type="text" name="message_content" id="coachMessageInput" autocomplete="off" placeholder="Message this coach…" class="flex-1 bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-2xl py-3 px-4 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand/40" required>
+                    <button type="submit" class="shrink-0 px-5 py-3 rounded-2xl bg-brand text-white font-black text-[10px] uppercase tracking-widest hover:bg-brand/90 transition-colors">
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Coach directory (browse coaches by sport, message like Team Discovery) -->
+    <div id="coachDiscoveryModal" class="fixed inset-0 z-[205] hidden font-[Inter,sans-serif]">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" id="coachDiscoveryBackdrop"></div>
+        <div class="absolute inset-0 flex flex-col bg-slate-50 dark:bg-navy opacity-0 translate-y-4 pointer-events-none transition-all duration-300" id="coachDiscoveryShell">
+            <div id="coachDiscoveryContent" class="flex flex-col h-full w-full max-w-[1600px] mx-auto translate-x-full transition-transform duration-300 ease-out">
+                <header class="shrink-0 flex items-center justify-between px-4 md:px-8 py-4 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-white/10 rounded-b-[2rem] shadow-sm">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="p-2 rounded-xl bg-brand/10 text-brand shrink-0">
+                            <i data-lucide="user-round" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-sm md:text-base font-black tracking-tight text-navy dark:text-white uppercase truncate">Coach directory</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="coachPortalGoDashboard" class="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-500 hover:text-brand">Dashboard</button>
+                        <button type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500" id="closeCoachDiscovery" aria-label="Close">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </header>
+                <div class="flex-1 flex flex-col lg:flex-row min-h-0 gap-0 lg:gap-6 p-4 md:p-6 overflow-hidden">
+                    <aside class="w-full lg:w-[340px] shrink-0 flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden max-h-[40vh] lg:max-h-none">
+                        <div class="p-5 border-b border-slate-100 dark:border-white/10">
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Active coaches</p>
+                            <div class="relative">
+                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                                <input type="text" id="coachSearch" placeholder="Search coach..." autocomplete="off" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.5rem] py-3.5 pl-11 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand/40 transition-all">
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar" id="coachesPortalContainer"></div>
+                    </aside>
+                    <section class="flex-1 min-w-0 flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
+                        <div id="coachDetailEmpty" class="flex-1 flex flex-col items-center justify-center p-10 text-center text-slate-400">
+                            <i data-lucide="user-round" class="w-14 h-14 mb-4 opacity-40"></i>
+                            <p class="text-sm font-black uppercase tracking-widest">Select a coach</p>
+                            <p class="text-xs mt-2 max-w-sm">Pick a coach to see their role and open a private thread—same idea as Team Discovery for teammates.</p>
+                        </div>
+                        <div id="coachDetailContent" class="hidden flex-1 overflow-y-auto custom-scrollbar opacity-0 transition-opacity duration-300"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Coach feedback (evaluations from monitor progress) -->
+    <div id="coachFeedbackModal" class="fixed inset-0 z-[218] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" id="coachFeedbackBackdrop"></div>
+        <div class="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            <div class="shrink-0 flex justify-between items-center p-5 border-b border-slate-200 dark:border-white/10">
+                <div>
+                    <h3 class="text-lg font-black uppercase tracking-tight">Coach feedback</h3>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">From evaluations</p>
+                </div>
+                <button type="button" id="closeCoachFeedback" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                {% for ev in athlete_evaluations %}
+                <div class="rounded-2xl border border-slate-200 dark:border-white/10 p-4 bg-slate-50/80 dark:bg-white/5">
+                    <div class="flex justify-between gap-2 text-[10px] font-black uppercase text-slate-500 mb-2">
+                        <span>{{ ev.date|date:"M j, Y" }}</span>
+                        <span class="text-brand">{{ ev.coach.get_full_name|default:ev.coach.username }}</span>
+                    </div>
+                    <p class="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">{{ ev.notes|linebreaksbr }}</p>
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-500 text-center py-8">No written feedback yet. Your coach can add notes from Monitor Progress.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Coach / incident reports visible to athlete -->
+    <div id="coachReportsModal" class="fixed inset-0 z-[218] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" id="coachReportsBackdrop"></div>
+        <div class="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl overflow-hidden">
+            <div class="shrink-0 flex justify-between items-center p-5 border-b border-slate-200 dark:border-white/10">
+                <div>
+                    <h3 class="text-lg font-black uppercase tracking-tight text-rose-600">Reports &amp; incidents</h3>
+                    <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Logged by coaching staff</p>
+                </div>
+                <button type="button" id="closeCoachReports" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
+                {% for inc in athlete_incidents %}
+                <div class="rounded-2xl border border-rose-200 dark:border-rose-900/50 p-4 bg-rose-50/50 dark:bg-rose-950/20">
+                    <div class="flex justify-between gap-2 text-[10px] font-black uppercase text-slate-500 mb-2">
+                        <span>{{ inc.date|date:"M j, Y" }}</span>
+                        <span>{% if inc.coach %}{{ inc.coach.user.get_full_name|default:inc.coach.user.username }}{% else %}Staff{% endif %}</span>
+                    </div>
+                    <p class="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">{{ inc.description|linebreaksbr }}</p>
+                </div>
+                {% empty %}
+                <p class="text-sm text-slate-500 text-center py-8">No incident or disciplinary reports on file.</p>
+                {% endfor %}
+                <a href="{% url 'management:athlete_my_progress_report' %}" target="_blank" rel="noopener noreferrer" class="block w-full text-center py-3 rounded-2xl bg-slate-900 text-white dark:bg-white dark:text-navy font-black text-[10px] uppercase tracking-widest hover:opacity-90 transition-opacity">Open full progress report</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Portal (full-screen: roster + teammate detail — matches Basketball Portal mockup) -->
+    <div id="teamDiscoveryModal" class="fixed inset-0 z-[200] hidden font-[Inter,sans-serif]">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" id="discoveryBackdrop"></div>
+        <div class="absolute inset-0 flex flex-col bg-slate-50 dark:bg-navy opacity-0 translate-y-4 pointer-events-none transition-all duration-300" id="discoveryShell">
+            <div id="discoveryContent" class="flex flex-col h-full w-full max-w-[1600px] mx-auto translate-x-full transition-transform duration-300 ease-out">
+                <!-- Top bar -->
+                <header class="shrink-0 flex items-center justify-between px-4 md:px-8 py-4 bg-white dark:bg-slate-900 border-b border-slate-200/80 dark:border-white/10 rounded-b-[2rem] shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 rounded-xl bg-brand/10 text-brand">
+                            <i data-lucide="basketball" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-sm md:text-base font-black tracking-tight text-navy dark:text-white uppercase">{{ current_sport }} Portal</span>
+                    </div>
+                    <div class="flex items-center gap-2 md:gap-3">
+                        <button type="button" id="portalGoDashboard" class="text-[10px] md:text-xs font-black uppercase tracking-widest text-slate-500 hover:text-brand">Dashboard</button>
+                        <button type="button" id="portalTeamRosterTab" class="inline-flex items-center gap-2 px-3 md:px-5 py-2 md:py-2.5 rounded-full bg-brand text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest shadow-lg shadow-brand/30">
+                            <i data-lucide="users" class="w-4 h-4"></i> Team Roster
+                        </button>
+                        <button type="button" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10 text-slate-500" id="closeDiscovery" aria-label="Close">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </header>
+
+                <div class="flex-1 flex flex-col lg:flex-row min-h-0 gap-0 lg:gap-6 p-4 md:p-6 overflow-hidden">
+                    <!-- Sidebar: search + roster -->
+                    <aside id="discoveryList" class="w-full lg:w-[340px] shrink-0 flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden max-h-[40vh] lg:max-h-none">
+                        <div class="p-5 border-b border-slate-100 dark:border-white/10">
+                            <p class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Team Discovery</p>
+                            <div class="relative group">
+                                <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                                <input type="text" id="teammateSearch" placeholder="Search athlete..." autocomplete="off" class="w-full bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/10 rounded-[1.5rem] py-3.5 pl-11 pr-4 text-sm text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-brand/40 transition-all">
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-4 space-y-2 custom-scrollbar" id="teammatesContainer"></div>
+                    </aside>
+
+                    <!-- Main: detail -->
+                    <section id="portalMain" class="flex-1 min-w-0 flex flex-col rounded-[2.5rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-xl overflow-hidden">
+                        <div id="teammateDetailEmpty" class="flex-1 flex flex-col items-center justify-center p-10 text-center text-slate-400">
+                            <i data-lucide="users-round" class="w-14 h-14 mb-4 opacity-40"></i>
+                            <p class="text-sm font-black uppercase tracking-widest">Select a teammate</p>
+                            <p class="text-xs mt-2 max-w-sm">Choose a player from the list to view season averages, Performance DNA, and competitive game log.</p>
+                        </div>
+                        <div id="teammateDetailContent" class="hidden flex-1 overflow-y-auto custom-scrollbar opacity-0 transition-opacity duration-300"></div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Help modal -->
+    <div id="helpModal" class="fixed inset-0 z-[220] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" id="helpModalBackdrop"></div>
+        <div class="relative w-full max-w-md rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-200 dark:border-white/10 shadow-2xl p-8">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-black uppercase tracking-tight">Help &amp; Tips</h3>
+                <button type="button" id="closeHelpModal" class="p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-white/10"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <ul class="space-y-3 text-sm text-slate-600 dark:text-slate-300">
+                <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success shrink-0 mt-0.5"></i> Open <strong>Team Discovery</strong> from the menu or header to view teammate profiles and message them.</li>
+                <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success shrink-0 mt-0.5"></i> Use <strong>Coaches</strong> in the header or <strong>Coach directory</strong> on the chat card to pick a coach and message them like Team Discovery.</li>
+                <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success shrink-0 mt-0.5"></i> <strong>Feedback</strong> and <strong>Reports</strong> (left column) show evaluation notes and incident logs; <strong>My progress report</strong> opens a printable summary.</li>
+                <li class="flex gap-2"><i data-lucide="check" class="w-4 h-4 text-success shrink-0 mt-0.5"></i> Your dashboard shows <strong>Next Session</strong>, game log, and Performance DNA—scroll to review.</li>
+            </ul>
+            <button type="button" id="closeHelpModal2" class="mt-6 w-full py-3 rounded-2xl bg-brand text-white font-black text-xs uppercase tracking-widest">Got it</button>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // Unified Theme Logic
+        const htmlElement = document.documentElement;
+        const bodyElement = document.body;
+
+        function updateThemeUI() {
+            const isDark = localStorage.getItem('darkMode') === 'enabled';
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (isDark) {
+                htmlElement.classList.add('dark');
+                bodyElement.classList.add('dark-mode');
+                if (themeIcon) themeIcon.setAttribute('data-lucide', 'sun');
+            } else {
+                htmlElement.classList.remove('dark');
+                bodyElement.classList.remove('dark-mode');
+                if (themeIcon) themeIcon.setAttribute('data-lucide', 'moon');
+            }
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        // Initialize UI
+        updateThemeUI();
+
+        const themeToggle = document.getElementById('themeToggle');
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                const current = localStorage.getItem('darkMode');
+                if (current === 'enabled') {
+                    localStorage.setItem('darkMode', 'disabled');
+                } else {
+                    localStorage.setItem('darkMode', 'enabled');
+                }
+                updateThemeUI();
+            });
+        }
+
+        // Athlete Premium Drawer Logic
+        const athleteBurgerMenu = document.getElementById('athleteBurgerMenu');
+        const athleteSideDrawer = document.getElementById('athleteSideDrawer');
+        const athleteDrawerBackdrop = document.getElementById('athleteDrawerBackdrop');
+        const athleteDrawerContent = document.getElementById('athleteDrawerContent');
+        const closeAthleteDrawer = document.getElementById('closeAthleteDrawer');
+
+        if (athleteBurgerMenu && athleteSideDrawer) {
+            window.openAthleteMenu = function() {
+                athleteSideDrawer.classList.remove('invisible');
+                athleteSideDrawer.setAttribute('aria-hidden', 'false');
+                athleteBurgerMenu.setAttribute('aria-expanded', 'true');
+                setTimeout(() => {
+                    athleteDrawerBackdrop.classList.replace('opacity-0', 'opacity-100');
+                    athleteDrawerContent.classList.replace('-translate-x-full', 'translate-x-0');
+                }, 10);
+                setTimeout(() => {
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                    if (closeAthleteDrawer) closeAthleteDrawer.focus();
+                }, 320);
+            };
+
+            window.closeAthleteMenu = function() {
+                athleteDrawerBackdrop.classList.replace('opacity-100', 'opacity-0');
+                athleteDrawerContent.classList.replace('translate-x-0', '-translate-x-full');
+                athleteSideDrawer.setAttribute('aria-hidden', 'true');
+                athleteBurgerMenu.setAttribute('aria-expanded', 'false');
+                setTimeout(() => {
+                    athleteSideDrawer.classList.add('invisible');
+                }, 300);
+            };
+
+            athleteBurgerMenu.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openAthleteMenu();
+            });
+            if (closeAthleteDrawer) closeAthleteDrawer.addEventListener('click', closeAthleteMenu);
+            if (athleteDrawerBackdrop) athleteDrawerBackdrop.addEventListener('click', closeAthleteMenu);
+        }
+
+        // Team Portal: roster + teammate detail (data from server JSON)
+        let teamData = [];
+        try {
+            const _tp = document.getElementById('teammates-portal-data');
+            if (_tp && _tp.textContent) teamData = JSON.parse(_tp.textContent);
+        } catch (e) { console.warn('Teammates JSON', e); }
+
+        let teammateThreads = {};
+        try {
+            const _tt = document.getElementById('teammate-threads-data');
+            if (_tt && _tt.textContent) teammateThreads = JSON.parse(_tt.textContent);
+        } catch (e) { console.warn('Teammate threads JSON', e); }
+
+        let coachData = [];
+        try {
+            const _cd = document.getElementById('coaches-portal-data');
+            if (_cd && _cd.textContent) coachData = JSON.parse(_cd.textContent);
+        } catch (e) { console.warn('Coaches JSON', e); }
+
+        let coachDmThreads = {};
+        try {
+            const _ct = document.getElementById('coach-dm-threads-data');
+            if (_ct && _ct.textContent) coachDmThreads = JSON.parse(_ct.textContent);
+        } catch (e) { console.warn('Coach threads JSON', e); }
+
+        const discoveryModal = document.getElementById('teamDiscoveryModal');
+        const discoveryShell = document.getElementById('discoveryShell');
+        const discoveryContent = document.getElementById('discoveryContent');
+        const discoveryBackdrop = document.getElementById('discoveryBackdrop');
+        const closeDiscovery = document.getElementById('closeDiscovery');
+        const teammatesContainer = document.getElementById('teammatesContainer');
+        const teammateDetailContent = document.getElementById('teammateDetailContent');
+        const teammateDetailEmpty = document.getElementById('teammateDetailEmpty');
+        const teammateSearch = document.getElementById('teammateSearch');
+        let selectedTeammateId = null;
+
+        function escapeHtml(s) {
+            return String(s)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function renderTeammates(filter = '') {
+            if (!teammatesContainer) return;
+            const q = (filter || '').toLowerCase();
+            const filtered = teamData.filter((t) => String(t.name).toLowerCase().includes(q));
+            if (!filtered.length) {
+                teammatesContainer.innerHTML = '<p class="text-center text-xs text-slate-400 py-8 px-2">No teammates match your search.</p>';
+                lucide.createIcons();
+                return;
+            }
+            teammatesContainer.innerHTML = filtered
+                .map((t) => {
+                    const active = selectedTeammateId !== null && Number(selectedTeammateId) === Number(t.id);
+                    const rowCls = active
+                        ? 'bg-brand text-white border-brand shadow-lg shadow-brand/25'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-200 dark:border-white/10 hover:border-brand/40';
+                    return `
+                <button type="button" class="w-full flex items-center gap-3 p-3 rounded-[1.75rem] border transition-all text-left ${rowCls}" onclick="showTeammateDetail(${t.id})">
+                    <img src="${escapeHtml(t.avatar_url)}" alt="" class="w-11 h-11 rounded-2xl object-cover border border-white/20 shrink-0 bg-slate-200" />
+                    <div class="flex-1 min-w-0">
+                        <div class="flex justify-between gap-2">
+                            <p class="text-xs font-black uppercase tracking-wide truncate">${escapeHtml(t.name)}</p>
+                            <span class="text-[9px] font-black uppercase tracking-widest shrink-0 ${active ? 'text-white/90' : 'text-brand'}">${escapeHtml(t.number)}</span>
+                        </div>
+                        <p class="text-[9px] font-bold uppercase tracking-widest mt-0.5 ${active ? 'text-white/80' : 'text-slate-500'}">${escapeHtml(t.role)}</p>
+                    </div>
+                    ${t.unread_count ? '<div class="w-2.5 h-2.5 bg-rose-500 rounded-full mr-2"></div>' : ''}
+                    <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 opacity-60"></i>
+                </button>`;
+                })
+                .join('');
+            lucide.createIcons();
+        }
+
+        window.showTeammateDetail = function (id) {
+            selectedTeammateId = id;
+            const t = teamData.find((x) => Number(x.id) === Number(id));
+            if (!t) return;
+            renderTeammates(teammateSearch ? teammateSearch.value : '');
+            if (teammateDetailEmpty) teammateDetailEmpty.classList.add('hidden');
+            if (!teammateDetailContent) return;
+            teammateDetailContent.classList.remove('hidden', 'opacity-0');
+            teammateDetailContent.classList.add('opacity-100');
+
+            const stats = t.stats_object || {};
+            const dna = t.dna_object || {};
+            const history = t.history_array || [];
+            const totals = t.totals || { pts: 0, ast: 0, reb: 0, blk: 0 };
+
+            const statBoxes = ['ppg', 'apg', 'rpg', 'bpg']
+                .map((k, i) => {
+                    const l_long = ['{{ tm_labels.l1_short }}', '{{ tm_labels.l2_short }}', '{{ tm_labels.l3_short }}', '{{ tm_labels.l4_short }}'][i] || k.toUpperCase();
+                    return `<div class="rounded-[1.5rem] border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5 p-4 text-center">
+                        <p class="text-[8px] font-bold text-slate-500 uppercase tracking-widest mb-1">SEASON ${l_long}</p>
+                        <p class="text-xl font-black text-navy dark:text-white">${escapeHtml(String(stats[k] ?? '—'))}</p>
+                    </div>`;
+                })
+                .join('');
+
+            const dnaRows = Object.entries(dna)
+                .map(
+                    ([k, v]) => `
+                <div>
+                    <div class="flex justify-between text-[9px] font-black uppercase mb-2 text-slate-600 dark:text-slate-300">
+                        <span>${escapeHtml(k)}</span>
+                        <span>${v}%</span>
+                    </div>
+                    <div class="h-2 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+                        <div class="h-full bg-brand rounded-full transition-all duration-700" style="width:${Math.min(100, v)}%"></div>
+                    </div>
+                </div>`
+                )
+                .join('');
+
+            const histRows = history
+                .map(
+                    (h) => `
+                <tr class="border-t border-white/10">
+                    <td class="py-4 px-2">
+                        <div class="text-white text-[11px] font-black">${escapeHtml(String(h.opponent))}</div>
+                        <div class="text-[8px] text-slate-400 font-bold mt-0.5">${escapeHtml(String(h.timeline))}</div>
+                    </td>
+                    <td class="py-4 text-center text-brand text-xs font-black">${h.pts}</td>
+                    <td class="py-4 text-center text-amber-400 text-xs font-black">${h.ast}</td>
+                    <td class="py-4 text-center text-slate-200 text-xs font-black">${h.reb}</td>
+                    <td class="py-4 text-center text-rose-300 text-xs font-black">${h.blk}</td>
+                    <td class="py-4 text-right pr-2"><span class="text-emerald-400 text-[10px] font-black">${escapeHtml(String(h.result))}</span></td>
+                </tr>`
+                )
+                .join('');
+
+            const firstName = String(t.name).split(' ')[0];
+
+            teammateDetailContent.innerHTML = `
+            <div class="p-6 md:p-10 portal-fade-in">
+                <div class="flex flex-col md:flex-row md:items-start gap-8 mb-10">
+                    <div class="flex flex-col items-center md:items-start shrink-0 mx-auto md:mx-0">
+                        <div class="relative">
+                            <img src="${escapeHtml(t.avatar_url)}" class="w-28 h-28 md:w-36 md:h-36 rounded-[2.5rem] object-cover border-4 border-brand/30 shadow-xl" alt="" />
+                            <div class="absolute -bottom-1 -right-1 w-10 h-10 bg-emerald-500 rounded-2xl border-4 border-white dark:border-slate-900 flex items-center justify-center">
+                                <i data-lucide="award" class="w-5 h-5 text-white"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 text-center md:text-left">
+                        <div class="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+                            <h2 class="text-2xl md:text-3xl font-black text-navy dark:text-white tracking-tight">${escapeHtml(t.name)}</h2>
+                            <span class="px-3 py-1 rounded-full bg-brand/15 text-brand text-[9px] font-black uppercase tracking-widest border border-brand/30">Active Athlete</span>
+                        </div>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">JERSEY ${escapeHtml(t.number)} — ${escapeHtml(t.role)}</p>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">${statBoxes}</div>
+                <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-10">
+                    <div class="rounded-[2rem] border border-slate-200 dark:border-white/10 p-6 md:p-8 bg-white dark:bg-white/5">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-navy dark:text-white flex items-center gap-2">
+                                <i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Performance DNA
+                            </h3>
+                        </div>
+                        <div class="space-y-4">${dnaRows}</div>
+                    </div>
+                    <div class="rounded-[2rem] bg-brand p-6 md:p-8 flex flex-col justify-between text-white shadow-xl shadow-brand/25 min-h-[220px]">
+                        <div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                <h3 class="text-[10px] font-black uppercase tracking-[0.2em]">Team Talk</h3>
+                            </div>
+                            <p class="text-sm font-medium text-white/90 leading-relaxed">Coordinate with ${escapeHtml(firstName)} or share encouragement after games. For official updates, message your coach below.</p>
+                        </div>
+                        <button type="button" id="btnTeamTalkSend" class="mt-6 w-full py-4 bg-white text-brand rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.01] transition-transform">
+                            Send Message
+                        </button>
+                    </div>
+                </div>
+                <div class="rounded-[2.5rem] bg-navy text-white p-6 md:p-8 border border-slate-700 shadow-2xl">
+                    <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-300">Competitive Play Tracking</h3>
+                        <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[8px] font-black uppercase">Win Streak: ${t.win_streak ?? 0}</span>
+                    </div>
+                    <div class="overflow-x-auto -mx-2">
+                        <table class="w-full min-w-[640px] text-left">
+                            <thead>
+                                <tr class="text-[8px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th class="pb-4 px-2">Opponent</th>
+                                    <th class="pb-4 text-center">{{ tm_labels.l1_short|default:"P.S" }}</th>
+                                    <th class="pb-4 text-center">{{ tm_labels.l2_short|default:"AS" }}</th>
+                                    <th class="pb-4 text-center">{{ tm_labels.l3_short|default:"RS" }}</th>
+                                    <th class="pb-4 text-center">{{ tm_labels.l4_short|default:"BS" }}</th>
+                                    <th class="pb-4 text-right pr-2">Result</th>
+                                </tr>
+                            </thead>
+                            <tbody>${histRows}</tbody>
+                        </table>
+                    </div>
+                    <div class="mt-8 pt-6 border-t border-white/10 flex flex-wrap justify-between gap-4 text-[9px] font-black uppercase tracking-widest">
+                        <span class="text-slate-400">Season Totals</span>
+                        <div class="flex flex-wrap gap-4 text-slate-300">
+                            <span>{{ tm_labels.l1_short|default:"PTS" }}: <span class="text-white">${totals.pts}</span></span>
+                            <span>{{ tm_labels.l2_short|default:"AST" }}: <span class="text-white">${totals.ast}</span></span>
+                            <span>{{ tm_labels.l3_short|default:"REB" }}: <span class="text-white">${totals.reb}</span></span>
+                            <span>{{ tm_labels.l4_short|default:"BLK" }}: <span class="text-white">${totals.blk}</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+            lucide.createIcons();
+            const btnTalk = document.getElementById('btnTeamTalkSend');
+            if (btnTalk)
+                btnTalk.addEventListener('click', () => {
+                    const uid = t.user_id;
+                    if (uid) {
+                        closeDiscoveryModal();
+                        setTimeout(() => openTeammateChatModal(uid, t.name, t.avatar_url), 280);
+                    }
+                });
+        };
+
+        function renderTeammateChatBubbles(uid) {
+            const box = document.getElementById('teammateChatScroll');
+            if (!box) return;
+            const key = String(uid);
+            const rows = teammateThreads[key] || [];
+            if (!rows.length) {
+                box.innerHTML = '<p class="text-center text-xs text-slate-500 py-8 px-4">No messages yet. Say hello to start the conversation.</p>';
+                return;
+            }
+            box.innerHTML = rows
+                .map((row) => {
+                    const mine = row.is_mine;
+                    const bubble = mine
+                        ? 'ml-auto bg-brand text-white rounded-2xl rounded-tr-none'
+                        : 'mr-auto bg-white dark:bg-white/10 text-slate-900 dark:text-slate-100 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/10';
+                    const align = mine ? 'items-end' : 'items-start';
+                    let timeStr = '';
+                    try {
+                        const d = new Date(row.timestamp);
+                        timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    } catch (e) {}
+                    return `<div class="flex flex-col ${align}"><div class="max-w-[88%] px-4 py-2.5 text-[12px] font-medium ${bubble}">${escapeHtml(row.content)}</div><span class="text-[8px] font-bold text-slate-500 mt-1 uppercase">${timeStr}</span></div>`;
+                })
+                .join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        window.openTeammateChatModal = function (userId, displayName, avatarUrl) {
+            const modal = document.getElementById('teammateChatModal');
+            const title = document.getElementById('teammateChatTitle');
+            const hid = document.getElementById('teammateReceiverUserId');
+            const av = document.getElementById('teammateChatAvatar');
+            const inp = document.getElementById('teammateMessageInput');
+            if (!modal || !hid) return;
+            hid.value = String(userId);
+            if (title) title.textContent = displayName || 'Teammate';
+            if (av) {
+                if (avatarUrl) {
+                    av.src = avatarUrl;
+                    av.classList.remove('hidden');
+                } else {
+                    av.classList.add('hidden');
+                }
+            }
+            renderTeammateChatBubbles(userId);
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            markNotificationsRead('chat');
+            const dot = document.getElementById('teamDiscoveryDot');
+            if(dot) dot.remove();
+
+            setTimeout(() => inp && inp.focus(), 100);
+        };
+
+        function closeTeammateChatModal() {
+            const modal = document.getElementById('teammateChatModal');
+            if (modal) modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('closeTeammateChat')?.addEventListener('click', closeTeammateChatModal);
+        document.getElementById('teammateChatBackdrop')?.addEventListener('click', closeTeammateChatModal);
+
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const tc = params.get('teammate_chat');
+            if (!tc) return;
+            const uid = parseInt(tc, 10);
+            if (!uid) return;
+            const mate = teamData.find((x) => Number(x.user_id) === uid);
+            const name = mate ? mate.name : 'Teammate';
+            const av = mate ? mate.avatar_url : '';
+            window.history.replaceState({}, '', window.location.pathname);
+            openTeammateChatModal(uid, name, av);
+        })();
+
+        // —— Coach directory + per-coach DM ——
+        const coachDiscoveryModal = document.getElementById('coachDiscoveryModal');
+        const coachDiscoveryShell = document.getElementById('coachDiscoveryShell');
+        const coachDiscoveryContent = document.getElementById('coachDiscoveryContent');
+        const coachDiscoveryBackdrop = document.getElementById('coachDiscoveryBackdrop');
+        const closeCoachDiscovery = document.getElementById('closeCoachDiscovery');
+        const coachesPortalContainer = document.getElementById('coachesPortalContainer');
+        const coachDetailContent = document.getElementById('coachDetailContent');
+        const coachDetailEmpty = document.getElementById('coachDetailEmpty');
+        const coachSearch = document.getElementById('coachSearch');
+        let selectedCoachPk = null;
+
+        function renderCoachCoachBubbles(userId) {
+            const box = document.getElementById('coachChatScroll');
+            if (!box) return;
+            const key = String(userId);
+            const rows = coachDmThreads[key] || [];
+            if (!rows.length) {
+                box.innerHTML = '<p class="text-center text-xs text-slate-500 py-8 px-4">No messages yet. Say hello to this coach.</p>';
+                return;
+            }
+            box.innerHTML = rows
+                .map((row) => {
+                    const mine = row.is_mine;
+                    const bubble = mine
+                        ? 'ml-auto bg-brand text-white rounded-2xl rounded-tr-none'
+                        : 'mr-auto bg-white dark:bg-white/10 text-slate-900 dark:text-slate-100 rounded-2xl rounded-tl-none border border-slate-200 dark:border-white/10';
+                    const align = mine ? 'items-end' : 'items-start';
+                    let timeStr = '';
+                    try {
+                        const d = new Date(row.timestamp);
+                        timeStr = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                    } catch (e) {}
+                    return `<div class="flex flex-col ${align}"><div class="max-w-[88%] px-4 py-2.5 text-[12px] font-medium ${bubble}">${escapeHtml(row.content)}</div><span class="text-[8px] font-bold text-slate-500 mt-1 uppercase">${timeStr}</span></div>`;
+                })
+                .join('');
+            box.scrollTop = box.scrollHeight;
+        }
+
+        window.openCoachChatModal = function (userId, displayName, avatarUrl) {
+            const modal = document.getElementById('coachChatModal');
+            const title = document.getElementById('coachChatTitle');
+            const hid = document.getElementById('coachReceiverUserId');
+            const av = document.getElementById('coachChatAvatar');
+            const inp = document.getElementById('coachMessageInput');
+            if (!modal || !hid) return;
+            hid.value = String(userId);
+            if (title) title.textContent = displayName || 'Coach';
+            if (av) {
+                if (avatarUrl) {
+                    av.src = avatarUrl;
+                    av.classList.remove('hidden');
+                } else {
+                    av.classList.add('hidden');
+                }
+            }
+            renderCoachCoachBubbles(userId);
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            
+            markNotificationsRead('chat');
+            const dot = document.querySelector('[title="1 unread from coach"]');
+            if(dot) dot.remove();
+
+            setTimeout(() => inp && inp.focus(), 100);
+        };
+
+        function closeCoachChatModal() {
+            const modal = document.getElementById('coachChatModal');
+            if (modal) modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('closeCoachChatModalBtn')?.addEventListener('click', closeCoachChatModal);
+        document.getElementById('coachChatBackdrop')?.addEventListener('click', closeCoachChatModal);
+
+        function renderCoachesList(filter = '') {
+            if (!coachesPortalContainer) return;
+            const q = (filter || '').toLowerCase();
+            const filtered = coachData.filter((c) => {
+                const sports = (c.sports || []).join(' ').toLowerCase();
+                return (
+                    String(c.name).toLowerCase().includes(q) ||
+                    String(c.specialization || '').toLowerCase().includes(q) ||
+                    sports.includes(q)
+                );
+            });
+            if (!filtered.length) {
+                coachesPortalContainer.innerHTML = '<p class="text-center text-xs text-slate-400 py-8 px-2">No coaches match your search.</p>';
+                lucide.createIcons();
+                return;
+            }
+            coachesPortalContainer.innerHTML = filtered
+                .map((c) => {
+                    const active = selectedCoachPk !== null && Number(selectedCoachPk) === Number(c.id);
+                    const rowCls = active
+                        ? 'bg-brand text-white border-brand shadow-lg shadow-brand/25'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white border-slate-200 dark:border-white/10 hover:border-brand/40';
+                    const sportBadges = (c.sports || [])
+                        .map(
+                            (s) =>
+                                `<span class="text-[8px] font-black uppercase px-2 py-0.5 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-brand/10 text-brand'}">${escapeHtml(s)}</span>`
+                        )
+                        .join(' ');
+                    return `
+                <button type="button" class="w-full flex items-center gap-3 p-3 rounded-[1.75rem] border transition-all text-left ${rowCls}" onclick="showCoachDetail(${c.id})">
+                    <img src="${escapeHtml(c.avatar_url)}" alt="" class="w-11 h-11 rounded-2xl object-cover border border-white/20 shrink-0 bg-slate-200" />
+                    <div class="flex-1 min-w-0">
+                        <p class="text-xs font-black uppercase tracking-wide truncate">${escapeHtml(c.name)}</p>
+                        <p class="text-[9px] font-bold uppercase tracking-widest mt-0.5 ${active ? 'text-white/80' : 'text-slate-500'} truncate">${escapeHtml(c.specialization || 'Coach')}</p>
+                        <div class="flex flex-wrap gap-1 mt-1">${sportBadges}</div>
+                    </div>
+                    ${c.unread_count ? '<div class="w-2.5 h-2.5 bg-rose-500 rounded-full mr-2"></div>' : ''}
+                    <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 opacity-60"></i>
+                </button>`;
+                })
+                .join('');
+            lucide.createIcons();
+        }
+
+        window.showCoachDetail = function (id) {
+            selectedCoachPk = id;
+            const c = coachData.find((x) => Number(x.id) === Number(id));
+            if (!c) return;
+            renderCoachesList(coachSearch ? coachSearch.value : '');
+            if (coachDetailEmpty) coachDetailEmpty.classList.add('hidden');
+            if (!coachDetailContent) return;
+            coachDetailContent.classList.remove('hidden', 'opacity-0');
+            coachDetailContent.classList.add('opacity-100');
+            const sportsStr = (c.sports || []).join(' · ');
+            coachDetailContent.innerHTML = `
+            <div class="p-6 md:p-10 portal-fade-in">
+                <div class="flex flex-col md:flex-row md:items-start gap-8 mb-8">
+                    <img src="${escapeHtml(c.avatar_url)}" class="w-28 h-28 md:w-32 md:h-32 rounded-[2.5rem] object-cover border-4 border-brand/30 shadow-xl mx-auto md:mx-0 shrink-0" alt="" />
+                    <div class="flex-1 text-center md:text-left min-w-0">
+                        <h2 class="text-2xl md:text-3xl font-black text-navy dark:text-white tracking-tight">${escapeHtml(c.name)}</h2>
+                        <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mt-2">${escapeHtml(c.specialization || 'Coach')}</p>
+                        <p class="text-xs font-bold text-brand mt-2">${escapeHtml(sportsStr)}</p>
+                    </div>
+                </div>
+                <div class="rounded-[2rem] bg-brand p-6 md:p-8 text-white shadow-xl shadow-brand/25">
+                    <div class="flex items-center gap-2 mb-3">
+                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                        <h3 class="text-[10px] font-black uppercase tracking-[0.2em]">Direct message</h3>
+                    </div>
+                    <p class="text-sm font-medium text-white/90 leading-relaxed mb-6">Open a private thread with this coach. Your messages here are the same as Coach Chat, filtered by coach.</p>
+                    <button type="button" id="btnCoachDmOpen" class="w-full py-4 bg-white text-brand rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-[1.01] transition-transform">
+                        Message coach
+                    </button>
+                </div>
+            </div>`;
+            lucide.createIcons();
+            const btnDm = document.getElementById('btnCoachDmOpen');
+            if (btnDm)
+                btnDm.addEventListener('click', () => {
+                    closeCoachPortal();
+                    setTimeout(() => openCoachChatModal(c.user_id, c.name, c.avatar_url), 280);
+                });
+        };
+
+        function openCoachPortal() {
+            if (!coachDiscoveryModal || !coachDiscoveryContent || !coachDiscoveryShell) return;
+            coachDiscoveryModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                coachDiscoveryShell.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+                coachDiscoveryShell.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                coachDiscoveryContent.classList.remove('translate-x-full');
+            });
+            renderCoachesList(coachSearch ? coachSearch.value : '');
+            if (typeof window.closeAthleteMenu === 'function') window.closeAthleteMenu();
+            lucide.createIcons();
+        }
+
+        function closeCoachPortal() {
+            if (!coachDiscoveryModal || !coachDiscoveryContent || !coachDiscoveryShell) return;
+            coachDiscoveryContent.classList.add('translate-x-full');
+            coachDiscoveryShell.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            coachDiscoveryShell.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            document.body.style.overflow = '';
+            setTimeout(() => coachDiscoveryModal.classList.add('hidden'), 280);
+            selectedCoachPk = null;
+            if (coachDetailContent) {
+                coachDetailContent.innerHTML = '';
+                coachDetailContent.classList.add('hidden');
+            }
+            if (coachDetailEmpty) coachDetailEmpty.classList.remove('hidden');
+        }
+
+        document.getElementById('btnHeaderCoachDirectory')?.addEventListener('click', openCoachPortal);
+        document.getElementById('btnCoachDiscoveryInline')?.addEventListener('click', openCoachPortal);
+        document.getElementById('btnCoachDiscoveryInlineNoPrimary')?.addEventListener('click', openCoachPortal);
+        if (closeCoachDiscovery) closeCoachDiscovery.addEventListener('click', closeCoachPortal);
+        if (coachDiscoveryBackdrop) coachDiscoveryBackdrop.addEventListener('click', closeCoachPortal);
+        document.getElementById('coachPortalGoDashboard')?.addEventListener('click', () => {
+            closeCoachPortal();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+        if (coachSearch) coachSearch.addEventListener('input', (e) => renderCoachesList(e.target.value));
+
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const cc = params.get('coach_chat');
+            if (!cc) return;
+            const uid = parseInt(cc, 10);
+            if (!uid) return;
+            const ch = coachData.find((x) => Number(x.user_id) === uid);
+            const name = ch ? ch.name : 'Coach';
+            const av = ch ? ch.avatar_url : '';
+            window.history.replaceState({}, '', window.location.pathname);
+            openCoachChatModal(uid, name, av);
+        })();
+
+        const coachFeedbackModal = document.getElementById('coachFeedbackModal');
+        const coachReportsModal = document.getElementById('coachReportsModal');
+        function openCoachFeedbackModal() {
+            if (!coachFeedbackModal) return;
+            coachFeedbackModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+            markNotificationsRead('evaluation');
+            const btn = document.getElementById('btnOpenCoachFeedback');
+            if (btn) {
+                const badge = btn.querySelector('.bg-rose-500');
+                if (badge) badge.remove();
+            }
+        }
+        function closeCoachFeedbackModalFn() {
+            if (coachFeedbackModal) coachFeedbackModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        function openCoachReportsModal() {
+            if (!coachReportsModal) return;
+            coachReportsModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            lucide.createIcons();
+            markNotificationsRead('incident');
+            const btn = document.getElementById('btnOpenCoachReports');
+            if (btn) {
+                const badge = btn.querySelector('.bg-white');
+                if (badge) badge.remove();
+            }
+        }
+        function closeCoachReportsModalFn() {
+            if (coachReportsModal) coachReportsModal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+        document.getElementById('btnOpenCoachFeedback')?.addEventListener('click', openCoachFeedbackModal);
+        document.getElementById('btnOpenCoachReports')?.addEventListener('click', openCoachReportsModal);
+        document.getElementById('closeCoachFeedback')?.addEventListener('click', closeCoachFeedbackModalFn);
+        document.getElementById('coachFeedbackBackdrop')?.addEventListener('click', closeCoachFeedbackModalFn);
+        document.getElementById('closeCoachReports')?.addEventListener('click', closeCoachReportsModalFn);
+        document.getElementById('coachReportsBackdrop')?.addEventListener('click', closeCoachReportsModalFn);
+
+        function openTeamPortal() {
+            if (!discoveryModal || !discoveryContent || !discoveryShell) return;
+            discoveryModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                discoveryShell.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none');
+                discoveryShell.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+                discoveryContent.classList.remove('translate-x-full');
+            });
+            renderTeammates(teammateSearch ? teammateSearch.value : '');
+            if (typeof window.closeAthleteMenu === 'function') window.closeAthleteMenu();
+            lucide.createIcons();
+        }
+
+        function closeDiscoveryModal() {
+            if (!discoveryModal || !discoveryContent || !discoveryShell) return;
+            discoveryContent.classList.add('translate-x-full');
+            discoveryShell.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none');
+            discoveryShell.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            document.body.style.overflow = '';
+            setTimeout(() => discoveryModal.classList.add('hidden'), 280);
+            selectedTeammateId = null;
+            if (teammateDetailContent) {
+                teammateDetailContent.innerHTML = '';
+                teammateDetailContent.classList.add('hidden');
+            }
+            if (teammateDetailEmpty) teammateDetailEmpty.classList.remove('hidden');
+        }
+
+        ['btnTeamDiscovery', 'btnHeaderTeamRoster'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('click', openTeamPortal);
+        });
+        const portalGoDashboard = document.getElementById('portalGoDashboard');
+        if (portalGoDashboard)
+            portalGoDashboard.addEventListener('click', () => {
+                closeDiscoveryModal();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        const portalTeamRosterTab = document.getElementById('portalTeamRosterTab');
+        if (portalTeamRosterTab)
+            portalTeamRosterTab.addEventListener('click', () => {
+                if (teammateSearch) {
+                    teammateSearch.focus();
+                    teammateSearch.select();
+                }
+            });
+        if (closeDiscovery) closeDiscovery.addEventListener('click', closeDiscoveryModal);
+        if (discoveryBackdrop) discoveryBackdrop.addEventListener('click', closeDiscoveryModal);
+        if (teammateSearch) teammateSearch.addEventListener('input', (e) => renderTeammates(e.target.value));
+
+        const helpModal = document.getElementById('helpModal');
+        function openHelp() {
+            if (helpModal) {
+                helpModal.classList.remove('hidden');
+                if (typeof window.closeAthleteMenu === 'function') window.closeAthleteMenu();
+                lucide.createIcons();
+            }
+        }
+        function closeHelp() {
+            if (helpModal) helpModal.classList.add('hidden');
+        }
+        const btnHelp = document.getElementById('btnDrawerHelp');
+        if (btnHelp) btnHelp.addEventListener('click', openHelp);
+        document.getElementById('closeHelpModal')?.addEventListener('click', closeHelp);
+        document.getElementById('closeHelpModal2')?.addEventListener('click', closeHelp);
+        document.getElementById('helpModalBackdrop')?.addEventListener('click', closeHelp);
+
+        document.querySelectorAll('[data-drawer-nav]').forEach((a) => {
+            a.addEventListener('click', () => {
+                if (typeof window.closeAthleteMenu === 'function') window.closeAthleteMenu();
+            });
+        });
+
+        // Escape: close topmost overlay first
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            const helpModal = document.getElementById('helpModal');
+            if (helpModal && !helpModal.classList.contains('hidden')) {
+                helpModal.classList.add('hidden');
+                e.preventDefault();
+                return;
+            }
+            const cfb = document.getElementById('coachFeedbackModal');
+            if (cfb && !cfb.classList.contains('hidden')) {
+                closeCoachFeedbackModalFn();
+                e.preventDefault();
+                return;
+            }
+            const crp = document.getElementById('coachReportsModal');
+            if (crp && !crp.classList.contains('hidden')) {
+                closeCoachReportsModalFn();
+                e.preventDefault();
+                return;
+            }
+            const ccm = document.getElementById('coachChatModal');
+            if (ccm && !ccm.classList.contains('hidden')) {
+                closeCoachChatModal();
+                e.preventDefault();
+                return;
+            }
+            const tm = document.getElementById('teammateChatModal');
+            if (tm && !tm.classList.contains('hidden')) {
+                closeTeammateChatModal();
+                e.preventDefault();
+                return;
+            }
+            const coachDisc = document.getElementById('coachDiscoveryModal');
+            if (coachDisc && !coachDisc.classList.contains('hidden')) {
+                closeCoachPortal();
+                e.preventDefault();
+                return;
+            }
+            const disc = document.getElementById('teamDiscoveryModal');
+            if (disc && !disc.classList.contains('hidden')) {
+                closeDiscoveryModal();
+                e.preventDefault();
+                return;
+            }
+            const drawer = document.getElementById('athleteSideDrawer');
+            const burger = document.getElementById('athleteBurgerMenu');
+            if (drawer && !drawer.classList.contains('invisible')) {
+                if (typeof window.closeAthleteMenu === 'function') window.closeAthleteMenu();
+                burger?.focus();
+                e.preventDefault();
+            }
+        });
+
+        // Scroll chat
+        const chat = document.getElementById('chatContainer');
+        if (chat) chat.scrollTop = chat.scrollHeight;
+
+        // Radar Chart
+        const radarCtx = document.getElementById('radarChart');
+        if (radarCtx) {
+            const ctx = radarCtx.getContext('2d');
+            try {
+                const categories = JSON.parse('{{ radar_categories|safe }}');
+                const dataValues = JSON.parse('{{ radar_values|safe }}');
+
+                new Chart(ctx, {
+                    type: 'radar',
+                    data: {
+                        labels: categories,
+                        datasets: [{
+                            data: dataValues,
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 2,
+                            pointBackgroundColor: '#3b82f6',
+                            pointBorderColor: '#0f172a',
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: { color: 'rgba(255,255,255,0.05)' },
+                                grid: { color: 'rgba(255,255,255,0.05)' },
+                                pointLabels: {
+                                    color: '#64748b',
+                                    font: { family: 'Plus Jakarta Sans', size: 9, weight: '800' }
+                                },
+                                ticks: { display: false, max: 100, min: 0 }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            } catch (e) {
+                console.error("Error initializing Radar Chart:", e);
+            }
+        }
+
+        function markNotificationsRead(type) {
+            fetch("{% url 'management:mark_notifications_read' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]')?.value || ""
+                },
+                body: JSON.stringify({type: type})
+            }).catch(console.error);
+        }
+
+    </script>
+</body>
+</html>

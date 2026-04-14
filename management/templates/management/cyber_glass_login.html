@@ -1,0 +1,304 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CEC Athlete Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --accent: #5b5cf0;
+      --accent-rgb: 91, 92, 240;
+      --accent-soft: rgba(91, 92, 240, 0.28);
+      --accent-text: #8b8cff;
+      --panel-bg: rgba(46, 50, 108, 0.45);
+      --panel-border: rgba(120, 130, 255, 0.18);
+      --field-bg: rgba(78, 83, 145, 0.35);
+      --field-border: rgba(152, 161, 255, 0.16);
+      --dragon-filter: hue-rotate(0deg) saturate(1.05) brightness(0.94);
+    }
+
+    html, body {
+      min-height: 100%;
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background:
+        radial-gradient(circle at 50% 25%, rgba(93, 95, 240, 0.13), transparent 0, transparent 22rem),
+        radial-gradient(circle at 18% 15%, rgba(99, 102, 241, 0.12), transparent 0, transparent 18rem),
+        radial-gradient(circle at 85% 82%, rgba(59, 130, 246, 0.08), transparent 0, transparent 18rem),
+        linear-gradient(180deg, #0d1328 0%, #0f1731 100%);
+      color: #fff;
+    }
+
+    #unifiedPortal.role-admin {
+      --accent: #e5e7eb;
+      --accent-rgb: 229, 231, 235;
+      --accent-soft: rgba(229, 231, 235, 0.18);
+      --accent-text: #f8fafc;
+      --dragon-filter: grayscale(1) contrast(1.05) brightness(0.92);
+    }
+
+    #unifiedPortal.role-coach {
+      --accent: #38bdf8;
+      --accent-rgb: 56, 189, 248;
+      --accent-soft: rgba(56, 189, 248, 0.22);
+      --accent-text: #7dd3fc;
+      --dragon-filter: hue-rotate(165deg) saturate(1.25) brightness(0.94);
+    }
+
+    #unifiedPortal.role-athlete {
+      --accent: #10b981;
+      --accent-rgb: 16, 185, 129;
+      --accent-soft: rgba(16, 185, 129, 0.22);
+      --accent-text: #6ee7b7;
+      --dragon-filter: hue-rotate(70deg) saturate(1.15) brightness(0.95);
+    }
+
+    .portal-shell {
+      min-height: 100vh;
+    }
+
+    .portal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow:
+        0 30px 120px rgba(3, 7, 18, 0.55),
+        inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .portal-card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(120deg, transparent 0%, rgba(255,255,255,0.05) 40%, transparent 66%);
+      transform: translateX(-130%);
+      animation: shimmer 8s linear infinite;
+      pointer-events: none;
+    }
+
+    @keyframes shimmer {
+      to { transform: translateX(140%); }
+    }
+
+    .portal-logo-ring {
+      box-shadow:
+        inset 0 0 0 1px rgba(var(--accent-rgb), 0.28),
+        0 0 0 1px rgba(255,255,255,0.04);
+    }
+
+    .portal-logo-ring img {
+      width: 100%;
+      height: 100%;
+      border-radius: 999px;
+      object-fit: cover;
+      object-position: center;
+      background: #ffffff;
+      padding: 6px;
+      filter: saturate(1.02) contrast(1.02);
+      transition: transform 240ms ease, box-shadow 240ms ease;
+    }
+
+    .portal-field {
+      background: var(--field-bg);
+      border: 1px solid var(--field-border);
+      transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+    .portal-field:focus-within {
+      border-color: rgba(var(--accent-rgb), 0.5);
+      box-shadow: 0 0 0 4px rgba(var(--accent-rgb), 0.12);
+      transform: translateY(-1px);
+    }
+
+    .portal-field input {
+      background: transparent;
+      color: #e5e7eb;
+    }
+
+    .portal-field input::placeholder {
+      color: rgba(203, 213, 225, 0.34);
+    }
+
+    .portal-button {
+      background: linear-gradient(135deg, rgba(var(--accent-rgb), 0.95), rgba(var(--accent-rgb), 0.72));
+      box-shadow: 0 18px 45px rgba(var(--accent-rgb), 0.24);
+    }
+
+    .verify-overlay {
+      background: rgba(7, 10, 22, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+  </style>
+</head>
+<body>
+  <div id="unifiedPortal" class="role-{{ login_variant|default:portal_type|default:'coach' }}">
+    <div class="portal-shell flex items-center justify-center px-4 py-8">
+      <div class="w-full max-w-xl">
+        <div class="mb-8 text-center">
+          <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-[rgba(120,130,255,0.18)] bg-[rgba(77,86,171,0.18)] px-4 py-2 text-[10px] font-black uppercase tracking-[0.28em] text-[var(--accent-text)]">
+            <span class="inline-flex h-2 w-2 rounded-full" style="background: var(--accent); box-shadow: 0 0 14px var(--accent);"></span>
+            Secure Access
+          </div>
+          <h1 class="text-5xl font-black tracking-tight text-white sm:text-6xl">
+            <span class="uppercase">CEC Athletes</span><span style="color: var(--accent-text);">.portal</span>
+          </h1>
+          <p class="mt-2 text-sm text-slate-300">Unified Login</p>
+        </div>
+
+        <div class="portal-card relative overflow-hidden rounded-[2rem] px-6 py-7 sm:px-8 sm:py-8">
+          <div class="relative mx-auto mb-7 flex h-24 w-24 items-center justify-center rounded-full bg-[rgba(255,255,255,0.08)] portal-logo-ring p-1">
+            <img src="{% static 'images/cec-logo.jpg' %}" alt="CEC logo">
+          </div>
+
+          {% if form.errors %}
+          <div class="mb-5 rounded-2xl border border-rose-400/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+            {% if form.non_field_errors %}
+              {% for error in form.non_field_errors %}
+                <div>{{ error }}</div>
+              {% endfor %}
+            {% else %}
+              <div>Please check your username and security key.</div>
+            {% endif %}
+          </div>
+          {% endif %}
+
+          <form id="unifiedLoginForm" method="post" class="space-y-5">
+            {% csrf_token %}
+
+            <div>
+              <label for="{{ form.username.id_for_label }}" class="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Username</label>
+              <div class="portal-field flex items-center gap-3 rounded-2xl px-4 py-4">
+                <i class="fa-solid fa-user text-slate-400"></i>
+                <input id="{{ form.username.id_for_label }}" name="{{ form.username.html_name }}" type="text" value="{{ form.username.value|default:'' }}" autocomplete="username" class="w-full border-0 p-0 text-sm font-semibold outline-none focus:ring-0" placeholder="Enter username" required>
+              </div>
+            </div>
+
+            <div>
+              <label for="{{ form.password.id_for_label }}" class="mb-2 block text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Security Key</label>
+              <div class="portal-field flex items-center gap-3 rounded-2xl px-4 py-4">
+                <i class="fa-solid fa-lock text-slate-400"></i>
+                <input id="{{ form.password.id_for_label }}" name="{{ form.password.html_name }}" type="password" autocomplete="current-password" class="w-full border-0 p-0 text-sm font-semibold outline-none focus:ring-0" placeholder="........" required>
+              </div>
+            </div>
+
+            <button type="submit" class="portal-button flex w-full items-center justify-center gap-3 rounded-2xl px-6 py-4 text-sm font-black uppercase tracking-[0.22em] text-white transition duration-200 hover:-translate-y-0.5">
+              <span>Enter Portal</span>
+              <i class="fa-solid fa-chevron-right text-xs"></i>
+            </button>
+
+            <p class="text-center text-xs font-medium text-slate-400">
+              Forgot your password? Please contact the administrator.
+            </p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <div id="verifyOverlay" class="verify-overlay fixed inset-0 z-[100] hidden items-center justify-center px-4">
+      <div class="portal-card relative w-full max-w-md overflow-hidden rounded-[2rem] px-6 py-8 text-center">
+        <div class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[rgba(40,45,102,0.45)] portal-logo-ring">
+          <i class="fa-solid fa-shield-halved text-xl" style="color: var(--accent-text);"></i>
+        </div>
+        <div id="verifyTitle" class="text-2xl font-black uppercase tracking-tight text-white">Verifying</div>
+        <p class="mt-2 text-sm text-slate-300">Establishing secure portal access.</p>
+        <div class="mt-6 space-y-3 text-left">
+          <div class="verify-step rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-300">Identity Verified</div>
+          <div class="verify-step rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-300">Role Detected</div>
+          <div class="verify-step rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-slate-300">Loading Environment</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const shell = document.getElementById('unifiedPortal');
+      const form = document.getElementById('unifiedLoginForm');
+      const usernameInput = document.getElementById('{{ form.username.id_for_label }}');
+      const verifyOverlay = document.getElementById('verifyOverlay');
+      const verifyTitle = document.getElementById('verifyTitle');
+      const verifySteps = Array.from(document.querySelectorAll('.verify-step'));
+      const defaultRole = '{{ login_variant|default:portal_type|default:"coach" }}';
+      let submitting = false;
+
+      function detectRole(value) {
+        const v = String(value || '').toLowerCase();
+        if (v.includes('admin')) return 'admin';
+        if (v.includes('coach')) return 'coach';
+        if (v.includes('athlete')) return 'athlete';
+        return defaultRole;
+      }
+
+      function applyRole(role) {
+        shell.classList.remove('role-admin', 'role-coach', 'role-athlete');
+        shell.classList.add('role-' + role);
+      }
+
+      applyRole(defaultRole);
+
+      if (usernameInput) {
+        usernameInput.addEventListener('input', function () {
+          applyRole(detectRole(usernameInput.value));
+        });
+      }
+
+      if (!form) {
+        return;
+      }
+
+      form.addEventListener('submit', function (event) {
+        if (submitting) return;
+        event.preventDefault();
+        submitting = true;
+
+        applyRole(detectRole(usernameInput ? usernameInput.value : ''));
+        verifyOverlay.classList.remove('hidden');
+        verifyOverlay.classList.add('flex');
+
+        gsap.set(verifySteps, { opacity: 0.35, x: -10 });
+        const tl = gsap.timeline({
+          onComplete: function () {
+            form.submit();
+          }
+        });
+
+        verifySteps.forEach(function (step, index) {
+          tl.to(step, {
+            opacity: 1,
+            x: 0,
+            borderColor: 'rgba(var(--accent-rgb), 0.40)',
+            backgroundColor: 'rgba(var(--accent-rgb), 0.12)',
+            color: '#ffffff',
+            duration: 0.22,
+            onStart: function () {
+              verifyTitle.textContent = index === 0 ? 'Identity Verified' : index === 1 ? 'Role Detected' : 'Loading Environment';
+            }
+          }, index === 0 ? 0.12 : '+=0.14');
+        });
+
+        tl.to({}, { duration: 0.12 });
+      });
+    })();
+  </script>
+</body>
+</html>

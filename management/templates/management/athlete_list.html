@@ -1,0 +1,157 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold"><i class="fas fa-users me-2 text-success"></i>Athletes</h1>
+        <div>
+            {% if user.is_superuser %}
+                <a href="{% url 'management:admin_register_athlete' %}" class="btn btn-success rounded-pill shadow-sm me-2">
+                    <i class="fas fa-plus me-2"></i>Register New Athlete
+                </a>
+            {% endif %}
+            <a href="{% url 'management:generate_report' %}" class="btn btn-outline-secondary rounded-pill shadow-sm">
+                <i class="fas fa-file-download me-2"></i>Download Report
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <form method="get" class="d-flex gap-2">
+                <div class="input-group shadow-sm rounded-pill overflow-hidden">
+                    <span class="input-group-text bg-white border-0 ps-3">
+                        <i class="fas fa-search text-muted"></i>
+                    </span>
+                    <input type="text" name="query" class="form-control border-0 py-2" placeholder="Search athletes by name, contact, address, or sports..." value="{{ request.GET.query }}">
+                    <button class="btn btn-success px-4" type="submit">Search</button>
+                </div>
+                {% if request.GET.query %}
+                    <a href="{% url 'management:athlete_list' %}" class="btn btn-outline-secondary rounded-pill d-flex align-items-center justify-content-center px-3">
+                        <i class="fas fa-times"></i>
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4"><a href="?sort_by=user__username&direction={% if request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">Athlete <i class="fas fa-sort ms-1 small opacity-50"></i></a></th>
+                        <th><a href="?sort_by=contact_number&direction={% if request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">Contact <i class="fas fa-sort ms-1 small opacity-50"></i></a></th>
+                        <th><a href="?sort_by=address&direction={% if request.GET.direction == 'asc' %}desc{% else %}asc{% endif %}" class="text-decoration-none text-dark">Address <i class="fas fa-sort ms-1 small opacity-50"></i></a></th>
+                        <th>Selected Sports</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for athlete in athletes %}
+                    <tr>
+                        <td class="ps-4">
+                            <a href="{% url 'management:athlete_detail' athlete.pk %}" class="text-decoration-none text-dark">
+                                <div class="d-flex align-items-center">
+                                    {% if athlete.profile_picture %}
+                                        <img src="{{ athlete.profile_picture.url }}" class="rounded-circle me-3" style="width: 45px; height: 45px; min-width: 45px; min-height: 45px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; min-width: 45px; min-height: 45px;">
+                                            {{ athlete.user.username|slice:":1"|upper }}
+                                        </div>
+                                    {% endif %}
+                                    <div>
+                                        <div class="fw-bold">{{ athlete.user.get_full_name|default:athlete.user.username }}</div>
+                                        <div class="small text-muted">Jersey Number: {{ athlete.jersey_number|default:"#--" }}</div>
+                                        <div class="small text-muted">{{ athlete.user.email }}</div>
+                                    </div>
+                                </div>
+                            </a>
+                        </td>
+                        <td>{{ athlete.contact_number }}</td>
+                        <td>{{ athlete.address|truncatechars:30 }}</td>
+                        <td>
+                            {% if 'Basketball' in athlete.sports %}
+                                <span class="text-orange fw-bold">Basketball</span>
+                            {% endif %}
+                            {% if 'Volleyball' in athlete.sports %}
+                                <span class="text-primary fw-bold">Volleyball</span>
+                            {% endif %}
+                            {% if 'Sepak Takraw' in athlete.sports %}
+                                <span class="text-success fw-bold">Sepak Takraw</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'management:athlete_detail' athlete.pk %}" class="btn btn-sm btn-outline-success rounded-pill me-1">View Info (#{{ athlete.jersey_number|default:"--" }})</a>
+                            <a href="{% url 'management:athlete_update' athlete.pk %}" class="btn btn-sm btn-warning rounded-pill me-1">Edit</a>
+                            {% if user.is_superuser %}
+                                <a href="{% url 'management:athlete_delete' athlete.pk %}" class="btn btn-sm btn-danger rounded-pill">Delete</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="fas fa-running fa-3x text-light mb-3"></i>
+                            <p class="text-muted">No athletes registered yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-orange {
+        color: #fd7e14 !important;
+    }
+    .text-success {
+        color: #198754 !important;
+    }
+    .text-primary {
+        color: #0d6efd !important;
+    }
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(25, 135, 84, 0.05);
+    }
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .bg-light {
+        background-color: #343a40 !important;
+    }
+    body.dark-mode .text-dark {
+        color: #f8f9fa !important;
+    }
+    body.dark-mode .table {
+        color: #f8f9fa;
+    }
+    body.dark-mode .table-hover tbody tr:hover {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+    body.dark-mode .input-group-text, body.dark-mode .form-control {
+        background-color: #343a40;
+        color: #f8f9fa;
+        border-color: #495057;
+    }
+</style>
+{% endblock %}

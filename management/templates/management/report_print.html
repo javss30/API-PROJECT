@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Athlete Performance Report - {{ coach.sports }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print { display: none; }
+            body { padding: 20px; }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container bg-white shadow p-5 my-5">
+        <div class="d-flex justify-content-between align-items-center mb-5 border-bottom pb-3">
+            <div>
+                <h1 class="fw-bold text-primary">Athlete Monitoring System</h1>
+                <p class="text-muted mb-0">Official Performance Report</p>
+            </div>
+            <div class="text-end">
+                <p class="mb-0 fw-bold">Coach: {{ coach.user.get_full_name|default:coach.user.username }}</p>
+                <p class="mb-0 text-muted">Sport: {{ coach.sports }}</p>
+                <p class="mb-0 text-muted">Date: {{ today|date:"F j, Y" }}</p>
+            </div>
+        </div>
+
+        <h3 class="fw-bold mb-4">Assigned Athlete Roster</h3>
+        <table class="table table-bordered">
+            <thead class="table-dark">
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Contact</th>
+                    <th>Weight</th>
+                    <th>Height</th>
+                    <th>Injury Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for athlete in athletes %}
+                <tr>
+                    <td>{{ athlete.user.username }}</td>
+                    <td>{{ athlete.user.get_full_name|default:"--" }}</td>
+                    <td>{{ athlete.contact_number }}</td>
+                    <td>{{ athlete.weight|default:"--" }} kg</td>
+                    <td>{{ athlete.height|default:"--" }} cm</td>
+                    <td>{{ athlete.injury_status }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center py-3">No athletes assigned yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="mt-5 pt-5 no-print text-center">
+            <button onclick="window.print()" class="btn btn-primary px-5 rounded-pill shadow">
+                <i class="fas fa-print me-2"></i> Print Report
+            </button>
+            <a href="javascript:history.back()" class="btn btn-outline-secondary px-5 rounded-pill">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

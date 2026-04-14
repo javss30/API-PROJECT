@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-success text-white text-center py-4">
+                    <h2 class="mb-0 fw-bold"><i class="fas fa-money-bill-wave me-2"></i>{% if form.instance.pk %}Edit{% else %}Add{% endif %} Payment</h2>
+                    <p class="mb-0 opacity-75">Record athlete payment transaction</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="paymentForm">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            {% bootstrap_form form %}
+                        </div>
+
+                        <!-- GCash QR Container -->
+                        <div id="gcash-qr-container" class="mb-4 text-center d-none">
+                            <div class="p-4 bg-light rounded-4 border border-primary-subtle shadow-sm">
+                                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-qrcode me-2"></i>GCash QR Payment</h6>
+                                <div class="bg-white p-3 d-inline-block rounded-4 shadow-sm mb-3">
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=GCash-Payment-Athlete-Portal" alt="GCash QR Code" class="img-fluid" style="max-width: 200px;">
+                                </div>
+                                <p class="small text-muted mb-0">Scan to pay via <strong>GCash</strong>. After payment, please input the <strong>Ref No.</strong> in the Transaction ID field below.</p>
+                            </div>
+                        </div>
+
+                        <!-- Bank Instructions Container -->
+                        <div id="bank-instructions-container" class="mb-4 d-none">
+                            <div class="p-4 bg-light rounded-4 border border-info-subtle shadow-sm">
+                                <h6 class="fw-bold text-info mb-3"><i class="fas fa-university me-2"></i>Bank Transfer Details</h6>
+                                <div class="space-y-2">
+                                    <div class="p-2 bg-white rounded-3 mb-2">
+                                        <div class="small fw-bold">BDO Unibank</div>
+                                        <div class="text-muted x-small">Acc Name: IPT Sports Academy</div>
+                                        <div class="text-muted x-small">Acc No: 0012-3456-7890</div>
+                                    </div>
+                                    <div class="p-2 bg-white rounded-3">
+                                        <div class="small fw-bold">Metrobank</div>
+                                        <div class="text-muted x-small">Acc Name: IPT Sports Academy</div>
+                                        <div class="text-muted x-small">Acc No: 987-654-3210</div>
+                                    </div>
+                                </div>
+                                <p class="small text-muted mt-3 mb-0">Transfer the amount and enter the <strong>Reference Number</strong> in the Transaction ID field.</p>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg rounded-pill shadow-sm">
+                                <i class="fas fa-save me-2"></i>Save Payment
+                            </button>
+                            <a href="{% url 'management:payment_list' %}" class="btn btn-outline-secondary btn-lg rounded-pill mt-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ athlete_sports_map|json_script:"athlete-sports-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const athleteSelect = document.querySelector('select[name="athlete"]');
+    const sportsSelect = document.querySelector('select[name="sports_selection"]');
+    const sportsData = JSON.parse(document.getElementById('athlete-sports-data').textContent);
+
+    if (athleteSelect && sportsSelect) {
+        function updateSports() {
+            const athleteId = athleteSelect.value;
+            const sports = sportsData[athleteId];
+            
+            if (sports) {
+                const sportToSelect = sports.split(',')[0].trim();
+                for (let i = 0; i < sportsSelect.options.length; i++) {
+                    if (sportsSelect.options[i].value === sportToSelect) {
+                        sportsSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                sportsSelect.selectedIndex = 0;
+            }
+        }
+
+        athleteSelect.addEventListener('change', updateSports);
+        updateSports();
+    }
+
+    // Payment Method Logic
+    const paymentMethodSelect = document.getElementById('id_payment_method');
+    const gcashContainer = document.getElementById('gcash-qr-container');
+    const bankContainer = document.getElementById('bank-instructions-container');
+
+    if (paymentMethodSelect) {
+        function togglePaymentInstructions() {
+            const method = paymentMethodSelect.value;
+            gcashContainer.classList.add('d-none');
+            bankContainer.classList.add('d-none');
+
+            if (method === 'GCash') {
+                gcashContainer.classList.remove('d-none');
+            } else if (method === 'BDO' || method === 'Metrobank') {
+                bankContainer.classList.remove('d-none');
+            }
+        }
+
+        paymentMethodSelect.addEventListener('change', togglePaymentInstructions);
+        togglePaymentInstructions();
+    }
+});
+</script>
+
+<style>
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .form-control, .form-select {
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+    }
+    /* Remove arrow from the sports dropdown since it's auto-filled */
+    select[name="sports_selection"] {
+        background-image: none !important;
+        padding-right: 1rem !important;
+        pointer-events: none; /* Make it read-only */
+        background-color: #e9ecef !important; /* Standard read-only color */
+        cursor: default;
+    }
+    /* Dark Mode Styling */
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .form-control, body.dark-mode .form-select {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+    body.dark-mode select[name="sports_selection"] {
+        background-color: #2b3035 !important;
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}

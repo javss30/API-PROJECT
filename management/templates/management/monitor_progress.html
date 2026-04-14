@@ -1,0 +1,735 @@
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<!-- Tailwind CSS (CDN) configured for scoping -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<script>
+    tailwind.config = {
+        corePlugins: { preflight: false },
+        theme: {
+            extend: {
+                fontFamily: { sans: ['Inter', 'sans-serif'] },
+                colors: {
+                    blue: { 600: '#2563eb' },
+                    amber: { 500: '#f59e0b' },
+                    emerald: { 500: '#10b981' },
+                    rose: { 600: '#e11d48' },
+                    slate: { 50: '#f8fafc', 800: '#1e293b', 900: '#0f172a' }
+                },
+                borderRadius: {
+                    '2xl': '1rem', '3xl': '1.5rem', '4xl': '2rem', '5xl': '2.5rem', '6xl': '3rem',
+                }
+            }
+        }
+    }
+</script>
+
+<style>
+    /* Scope styles to tw-wrapper to prevent leaking out to Bootstrap */
+    .tw-wrapper { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; min-height: 100vh;}
+    
+    /* Toast Animation */
+    @keyframes slideUpFade {
+        from { opacity: 0; transform: translate(-50%, 20px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    .tw-wrapper .toast-animate {
+        animation: slideUpFade 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+    .tw-wrapper .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .tw-wrapper .hover-lift:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); }
+
+    /* Dark mode emulation scoped */
+    body.dark-mode .tw-wrapper { background-color: #1a1d20 !important; color: #f8fafc !important; }
+    body.dark-mode .tw-wrapper .bg-white { background-color: #212529 !important; border-color: #3d4246 !important; }
+    body.dark-mode .tw-wrapper .text-slate-800 { color: #f8fafc !important; }
+    body.dark-mode .tw-wrapper .text-slate-900 { color: #ffffff !important; }
+    body.dark-mode .tw-wrapper td, body.dark-mode .tw-wrapper th { color: #f8fafc !important; border-color: #3d4246 !important;}
+    body.dark-mode .tw-wrapper .bg-slate-50 { background-color: #212529 !important; border-color: #3d4246 !important; color: white !important; }
+    body.dark-mode .tw-wrapper .hover\:bg-slate-50:hover { background-color: #343a40 !important; }
+</style>
+
+<div class="tw-wrapper rounded-3xl overflow-hidden mt-2 border border-slate-200">
+    {% csrf_token %}
+    <!-- Main Content Area -->
+    <div class="px-6 py-6 overflow-y-auto w-full max-w-7xl mx-auto pb-24">
+        
+        <!-- Header & Player Switcher -->
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-4">
+                    <div id="ui-athlete-avatar-container" class="bg-blue-600 text-white p-3 rounded-2xl shadow-lg shadow-blue-200 size-14 flex items-center justify-center overflow-hidden transition-all duration-300">
+                        <i id="ui-athlete-icon" data-lucide="{{ sport_icon|default:'activity' }}" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-black text-2xl lg:text-3xl tracking-tight text-slate-900" id="ui-athlete-name">Monitor Progress</h1>
+                        <p class="text-slate-400 text-xs font-bold uppercase tracking-widest" id="ui-athlete-jersey">Real-Time Athlete Analytics</p>
+                    </div>
+                </div>
+
+                <!-- Standings Display -->
+                <div class="flex gap-4 bg-white px-6 py-3 rounded-3xl border border-slate-100 shadow-sm">
+                    <div class="text-center">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Wins</p>
+                        <p id="ui-header-wins" class="text-xl font-black text-emerald-600 leading-none">0</p>
+                    </div>
+                    <div class="w-px h-8 bg-slate-100 my-auto"></div>
+                    <div class="text-center">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Losses</p>
+                        <p id="ui-header-losses" class="text-xl font-black text-rose-600 leading-none">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Player Dropdown Switcher -->
+            <div class="flex items-center gap-3 bg-white p-2 rounded-full border border-slate-200 shadow-sm">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-3">ACTIVE PROFILE:</span>
+                <select id="playerDropdown" class="appearance-none bg-blue-600 text-white font-bold text-sm rounded-full px-6 py-2 outline-none cursor-pointer hover:bg-blue-700 transition" onchange="switchPlayer(this.value)">
+                    <!-- Options populated by JS -->
+                </select>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid System -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Column (Grid: 3) -->
+            <div class="lg:col-span-3 flex flex-col gap-6">
+                <!-- Physical Condition Card -->
+                <div class="bg-white rounded-4xl shadow-sm border border-slate-100 overflow-hidden hover-lift">
+                    <div class="bg-emerald-500 text-white px-5 py-3 flex items-center gap-2">
+                        <i data-lucide="heart" class="w-4 h-4"></i>
+                        <h3 class="font-black text-xs uppercase tracking-wider">Physical Condition</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex justify-between items-center bg-slate-50 p-4 rounded-3xl mb-4">
+                            <div class="text-center">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Weight</p>
+                                <p class="text-xl font-bold text-slate-800" id="ui-weight">--</p>
+                            </div>
+                            <div class="w-px h-8 bg-slate-200"></div>
+                            <div class="text-center">
+                                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Endurance</p>
+                                <span class="bg-cyan-100 text-cyan-600 text-xs font-black uppercase px-3 py-1 rounded-full" id="ui-endurance">--</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Injury Status</span>
+                            <div class="flex items-center gap-1 text-emerald-500 font-bold text-sm">
+                                <i data-lucide="check-circle-2" class="w-4 h-4"></i> <span id="ui-injury">None</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Season Goals Card -->
+                <div class="bg-white rounded-4xl shadow-sm border border-slate-100 overflow-hidden hover-lift flex flex-col">
+                    <div class="bg-amber-500 text-white px-5 py-3 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="target" class="w-4 h-4"></i>
+                            <h3 class="font-black text-xs uppercase tracking-wider">Season Goals</h3>
+                        </div>
+                        <button class="bg-white/20 hover:bg-white/30 px-3 py-1 text-[10px] font-black uppercase rounded-full transition" onclick="openModal('goal')">Set Goal</button>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col justify-center">
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="font-bold text-sm text-slate-800">{{ stat_labels.l1|default:"Points" }} Target</h4>
+                            <span class="bg-blue-100 text-blue-600 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Active</span>
+                        </div>
+                        <div class="flex justify-between text-xs font-bold text-slate-500 mb-2">
+                            <span>Current: <span id="ui-goal-current">0</span></span>
+                            <span>Target: <span id="ui-goal-target">0</span></span>
+                        </div>
+                        <!-- Progress Bar -->
+                        <div class="w-full bg-slate-100 rounded-full h-2 mb-2 overflow-hidden">
+                            <div id="ui-goal-bar" class="bg-amber-500 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                        </div>
+                        <div class="text-right text-[10px] font-black text-slate-400 tracking-wider">
+                            <span id="ui-goal-percent">0</span>% COMPLETE
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Middle Column (Grid: 5) -->
+            <div class="lg:col-span-5 flex flex-col gap-6">
+                <!-- Skills Analysis / Hero Section -->
+                <div class="bg-white rounded-4xl shadow-sm border border-slate-100 hover-lift h-full flex flex-col overflow-hidden">
+                    <div class="bg-blue-600 text-white px-5 py-3 flex items-center gap-2">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        <h3 class="font-black text-xs uppercase tracking-wider">Skills Analysis</h3>
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col gap-6">
+                        
+                        <!-- Mini Trend Rows -->
+                        <div class="flex justify-between items-center border-b border-slate-50 pb-3">
+                            <div class="flex items-center gap-2 text-slate-600 font-bold text-sm">
+                                <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Speed
+                            </div>
+                            <div class="flex items-center gap-1 text-emerald-500 font-black text-[10px] tracking-wider uppercase">
+                                <i data-lucide="trending-up" class="w-3 h-3"></i> Improving
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center border-b border-slate-50 pb-3">
+                            <div class="flex items-center gap-2 text-slate-600 font-bold text-sm">
+                                <i data-lucide="dumbbell" class="w-4 h-4 text-blue-500"></i> Strength
+                            </div>
+                            <div class="flex items-center gap-1 text-slate-400 font-black text-[10px] tracking-wider uppercase">
+                                <i data-lucide="minus" class="w-3 h-3"></i> Stable
+                            </div>
+                        </div>
+
+                        <!-- Huge Attendance Hero -->
+                        <div class="border-2 border-dashed border-blue-100 rounded-4xl p-6 text-center mt-auto relative hover-lift cursor-pointer group" onclick="openModal('performance')">
+                            <div class="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition">
+                                <i data-lucide="edit-3" class="w-4 h-4 text-blue-400"></i>
+                            </div>
+                            <p class="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Attendance Rate</p>
+                            <h2 class="text-6xl font-black text-blue-600 mb-2" id="ui-attendance">0%</h2>
+                            <p class="text-xs text-slate-400 font-medium italic">Click to log Performance</p>
+                        </div>
+
+                        <!-- 3 Column Session Grid -->
+                        <div class="grid grid-cols-3 gap-4 mt-auto">
+                            <div class="bg-emerald-50 border border-emerald-100 rounded-3xl p-3 text-center">
+                                <p class="text-[9px] font-black text-emerald-600 uppercase tracking-widest mb-1">Done</p>
+                                <p class="text-xl font-black text-emerald-700" id="ui-sess-done">0</p>
+                            </div>
+                            <div class="bg-rose-50 border border-rose-100 rounded-3xl p-3 text-center">
+                                <p class="text-[9px] font-black text-rose-600 uppercase tracking-widest mb-1">Miss</p>
+                                <p class="text-xl font-black text-rose-700" id="ui-sess-miss">0</p>
+                            </div>
+                            <div class="bg-blue-50 border border-blue-100 rounded-3xl p-3 text-center">
+                                <p class="text-[9px] font-black text-blue-600 uppercase tracking-widest mb-1">Sched</p>
+                                <p class="text-xl font-black text-blue-700" id="ui-sess-sched">0</p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column (Grid: 4) -->
+            <div class="lg:col-span-4 flex flex-col gap-6">
+                
+                <!-- Evaluation Timeline -->
+                <div class="bg-white rounded-4xl shadow-sm border border-slate-100 overflow-hidden hover-lift flex-1 flex flex-col h-0 min-h-[300px]">
+                    <div class="bg-cyan-500 text-white px-5 py-3 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="message-square" class="w-4 h-4"></i>
+                            <h3 class="font-black text-xs uppercase tracking-wider">Coach Evaluations</h3>
+                        </div>
+                        <button class="bg-white/20 hover:bg-white/30 px-3 py-1 text-[10px] font-black uppercase rounded-full transition" onclick="openModal('note')">Add Note</button>
+                    </div>
+                    <div class="p-6 overflow-y-auto flex-1 custom-scrollbar" id="ui-eval-list">
+                        <!-- Evaluations populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Action Buttons Overlay (Matches Golden Prompt Visual Design) -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 transition hover-lift hover:shadow-blue-500/30" onclick="openModal('feedback')">
+                        <i data-lucide="send" class="w-6 h-6"></i>
+                        <span class="font-black text-[10px] tracking-widest uppercase">Feedback</span>
+                    </button>
+                    <button class="bg-rose-600 hover:bg-rose-700 text-white rounded-3xl p-4 flex flex-col items-center justify-center gap-2 transition hover-lift hover:shadow-rose-500/30" onclick="openModal('report')">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i>
+                        <span class="font-black text-[10px] tracking-widest uppercase">Report</span>
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Bottom Full Width Log -->
+        <div class="mt-6 bg-slate-900 rounded-5xl shadow-xl overflow-hidden text-white flex flex-col">
+            <div class="p-6 flex justify-between items-center border-b border-white/10">
+                <div class="flex items-center gap-3">
+                    <div class="bg-amber-500 p-2 rounded-2xl text-slate-900">
+                        <i data-lucide="sword" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-black text-lg uppercase tracking-wide">Historical Performance Log</h3>
+                        <p class="text-xs font-bold text-slate-400 tracking-wider">COMPETITIVE PLAY TRACKING</p>
+                    </div>
+                </div>
+                <button class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 font-black text-xs rounded-full flex items-center gap-2 transition" onclick="openModal('record')">
+                    <i data-lucide="plus-circle" class="w-4 h-4"></i> Add Record
+                </button>
+            </div>
+            <div class="overflow-x-auto w-full">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead class="bg-slate-800/50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-white/5">
+                        <tr>
+                            <th class="px-6 py-4 rounded-tl-3xl">Opponent</th>
+                            <th class="px-6 py-4">Timeline</th>
+                            <th class="px-6 py-4">Venue</th>
+                            <th class="px-6 py-4 text-center">{{ stat_labels.l1 }}</th>
+                            <th class="px-6 py-4 text-center">{{ stat_labels.l2 }}</th>
+                            <th class="px-6 py-4 text-center">{{ stat_labels.l3 }}</th>
+                            <th class="px-6 py-4 rounded-tr-3xl">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ui-games-list" class="divide-y divide-white/5 font-medium bg-white">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Average Footer -->
+            <div class="bg-slate-50 border-t border-slate-200 text-slate-800 px-6 py-4 flex justify-between items-center rounded-b-5xl">
+                <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Season Accumulated Totals</span>
+                <div class="flex gap-6 font-black text-xs">
+                    <span class="text-slate-800">{{ stat_labels.l1 }}: <span class="text-blue-600" id="ui-avg-pts">0</span></span>
+                    <span class="text-slate-800">{{ stat_labels.l2 }}: <span class="text-blue-600" id="ui-avg-ast">0</span></span>
+                    <span class="text-slate-800">{{ stat_labels.l3 }}: <span class="text-blue-600" id="ui-avg-reb">0</span></span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- UNIFIED MODAL SYSTEM OVERLAY -->
+    <div id="modalOverlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] hidden flex items-center justify-center" onclick="closeModal(event)">
+        <div id="modalContent" class="bg-white rounded-[2.5rem] shadow-2xl p-8 w-full max-w-md transform scale-95 opacity-0 transition-all duration-300 relative border border-slate-100" onclick="event.stopPropagation()">
+            <!-- Absolute Close Button -->
+            <button class="absolute top-6 right-6 text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-full p-2 transition" onclick="closeModal(true)">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+
+            <!-- Dynamic Header -->
+            <div class="flex items-center gap-3 mb-6 pb-6 border-b border-slate-100" id="modalHeader">
+                <!-- Icon injected here -->
+                <div>
+                    <h2 class="font-black text-xl text-slate-900 uppercase tracking-tight" id="modalTitle">MODAL</h2>
+                    <p class="text-xs font-bold text-slate-400 uppercase" id="modalSubtitle">Details</p>
+                </div>
+            </div>
+
+            <!-- Dynamic Body (Simple Form Injection) -->
+            <div id="modalBody" class="flex flex-col gap-4 mb-8">
+                <!-- Input fields injected here based on action -->
+            </div>
+
+            <!-- Footer Action -->
+            <button id="modalSubmitBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-black uppercase tracking-widest text-sm py-4 rounded-2xl transition shadow-lg shadow-slate-900/20" onclick="applyToDatabase()">
+                Apply to Database
+            </button>
+        </div>
+    </div>
+
+    <!-- TRANSACTION FEEDBACK TOAST -->
+    <div id="toastNotification" class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-4 rounded-full shadow-2xl z-[150] flex items-center gap-3 hidden border border-slate-700">
+        <div class="bg-emerald-500 rounded-full p-1 border-2 border-slate-900">
+            <i data-lucide="check" class="w-3 h-3 text-white"></i>
+        </div>
+        <span class="font-black text-xs uppercase tracking-widest" id="toastMessage">TRANSACTION VERIFIED</span>
+    </div>
+
+    <!-- PURE STATE-DRIVEN LOGIC & INTERACTIVITY -->
+    <script>
+        // Central Player State Store
+        const players = JSON.parse('{{ athletes_data_json|escapejs }}');
+        let currentActivePlayer = '{{ selected_athlete.id|default:"" }}';
+        if (!currentActivePlayer && Object.keys(players).length > 0) {
+            currentActivePlayer = Object.keys(players)[0];
+        }
+        let currentModalAction = null;
+
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            
+            // Populate Dropdown
+            const select = document.getElementById('playerDropdown');
+            for(let id in players) {
+                let opt = document.createElement('option');
+                opt.value = id;
+                const jersey = players[id].jersey_number ? ` (#${players[id].jersey_number})` : '';
+                opt.innerHTML = players[id].name + jersey;
+                select.appendChild(opt);
+            }
+            select.value = currentActivePlayer;
+
+            // Render Initial Data
+            renderDashboard(currentActivePlayer);
+            syncActiveAthleteInUrl(currentActivePlayer);
+        });
+
+        // The Switcher Magic
+        window.switchPlayer = function(playerId) {
+            currentActivePlayer = playerId;
+            renderDashboard(playerId);
+            syncActiveAthleteInUrl(playerId);
+        }
+
+        function syncActiveAthleteInUrl(playerId) {
+            if (!playerId) return;
+            const url = new URL(window.location.href);
+            url.searchParams.set('athlete_id', playerId);
+            window.history.replaceState({}, '', url.toString());
+        }
+
+        // Deep Render Engine
+        function renderDashboard(id) {
+            const data = players[id];
+
+            // Hydrate simple text nodes
+            document.getElementById('ui-athlete-name').innerText = data.name;
+
+            // Handle Avatar
+            const avatarContainer = document.getElementById('ui-athlete-avatar-container');
+            if (data.profile_picture) {
+                avatarContainer.innerHTML = `<img src="${data.profile_picture}" class="size-full object-cover">`;
+                avatarContainer.classList.remove('p-3');
+            } else {
+                avatarContainer.innerHTML = `<i data-lucide="{{ sport_icon|default:'activity' }}" class="w-6 h-6"></i>`;
+                avatarContainer.classList.add('p-3');
+                lucide.createIcons();
+            }
+
+            document.getElementById('ui-athlete-jersey').innerText = "JERSEY NUMBER: " + (data.jersey_number || "#--");
+            document.getElementById('ui-header-wins').innerText = data.wins || 0;
+            document.getElementById('ui-header-losses').innerText = data.losses || 0;
+            
+            document.getElementById('ui-weight').innerText = data.physical.weight;
+            document.getElementById('ui-endurance').innerText = data.physical.endurance;
+            
+            document.getElementById('ui-goal-current').innerText = data.goals.current + " pts";
+            document.getElementById('ui-goal-target').innerText = data.goals.target;
+            const percent = Math.min(Math.round((data.goals.current / data.goals.target) * 100), 100);
+            document.getElementById('ui-goal-percent').innerText = percent;
+            // Animate progress bar
+            setTimeout(() => { document.getElementById('ui-goal-bar').style.width = percent + '%'; }, 100);
+
+            document.getElementById('ui-attendance').innerText = data.attendance + '%';
+            document.getElementById('ui-sess-done').innerText = data.sessions.done;
+            document.getElementById('ui-sess-miss').innerText = data.sessions.miss;
+            document.getElementById('ui-sess-sched').innerText = data.sessions.sched;
+
+            // Render Evaluations
+            const evalList = document.getElementById('ui-eval-list');
+            evalList.innerHTML = '';
+            data.evaluations.forEach(ev => {
+                evalList.innerHTML += `
+                    <div class="border-l-4 border-cyan-400 pl-4 py-2 mb-6 ml-2">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">${ev.date}</span>
+                            <span class="text-[9px] font-black text-slate-300 uppercase tracking-widest">${ev.coach}</span>
+                        </div>
+                        <p class="text-sm font-medium text-slate-700 italic">"${ev.text}"</p>
+                    </div>
+                `;
+            });
+
+            // Render Game Logs & Compute Averages
+            const gameList = document.getElementById('ui-games-list');
+            gameList.innerHTML = '';
+            let tPts=0, tAst=0, tReb=0;
+            
+            data.games.forEach(g => {
+                tPts += g.pts; tAst += g.ast; tReb += g.reb;
+                let badge = g.win 
+                    ? `<span class="bg-emerald-100 text-emerald-700 text-[9px] font-black px-3 py-1 rounded-full">WIN</span>`
+                    : `<span class="bg-rose-100 text-rose-700 text-[9px] font-black px-3 py-1 rounded-full">LOSS</span>`;
+
+                let row = `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="px-6 py-4 flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full flex items-center justify-center font-black text-xs ${g.win ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}">
+                                ${g.opponent.substring(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                                <div class="font-bold text-slate-800 text-sm">${g.opponent}</div>
+                                <div class="text-[9px] font-black text-slate-400 uppercase">${g.subtitle}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-xs font-bold text-slate-600">${g.date}</td>
+                        <td class="px-6 py-4 text-xs font-medium text-slate-500">${g.venue}</td>
+                        <td class="px-6 py-4 text-center font-bold text-blue-600">${g.pts}</td>
+                        <td class="px-6 py-4 text-center font-bold text-amber-600">${g.ast}</td>
+                        <td class="px-6 py-4 text-center font-bold text-slate-700">${g.reb}</td>
+                        <td class="px-6 py-4 text-center">${badge}</td>
+                    </tr>
+                `;
+                gameList.innerHTML += row;
+            });
+
+            // Averages -> Changed to Totals per user request
+            document.getElementById('ui-avg-pts').innerText = tPts;
+            document.getElementById('ui-avg-ast').innerText = tAst;
+            document.getElementById('ui-avg-reb').innerText = tReb;
+        }
+
+        // UNIFIED MODAL LOGIC
+        window.openModal = function(action) {
+            currentModalAction = action;
+            const overlay = document.getElementById('modalOverlay');
+            const content = document.getElementById('modalContent');
+            const iconWrap = document.createElement('div');
+            const title = document.getElementById('modalTitle');
+            const subtitle = document.getElementById('modalSubtitle');
+            const body = document.getElementById('modalBody');
+
+            // Reset
+            overlay.classList.remove('hidden');
+            body.innerHTML = '';
+            
+            // Configs per action
+            const configs = {
+                'goal': { icon: 'target', color: 'bg-amber-500', title: 'UPDATE SEASON GOAL', sub: 'Adjust Progress Data', btnLabel: 'UPDATE GOAL', html: `<input type='number' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-amber-500 mb-2' placeholder='New Current {{ stat_labels.l1|default:"Points" }} (e.g. 50)' id='modalInputObj'>` },
+                'note': { icon: 'message-square', color: 'bg-cyan-500', title: 'ADD COACH NOTE', sub: 'Evaluation Timestamp', btnLabel: 'SAVE NOTE', html: `<textarea class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium w-full outline-none focus:border-cyan-500' rows='4' placeholder='Write an evaluation...' id='modalInputObj'></textarea>` },
+                'feedback': { icon: 'send', color: 'bg-blue-600', title: 'SEND FEEDBACK', sub: 'Direct to Athlete Portal', btnLabel: 'SEND MESSAGE', html: `<textarea class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-medium w-full outline-none focus:border-blue-600' rows='3' placeholder='Type your message...' id='modalInputObj'></textarea>` },
+                'report': { icon: 'alert-circle', color: 'bg-rose-600', title: 'LOG INCIDENT', sub: 'Confidential Disciplinary/Medical', btnLabel: 'SUBMIT REPORT', html: `<textarea class='bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-sm font-medium w-full outline-none focus:border-rose-600 text-rose-900 placeholder-rose-300' rows='3' placeholder='Describe incident details...' id='modalInputObj'></textarea>` },
+                'record': { icon: 'plus-circle', color: 'bg-slate-800', title: 'ADD GAME RECORD', sub: 'Log manual statistics', btnLabel: 'SUBMIT RECORD',
+                    html: `
+                        <input type='text' id='recordOpponent' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-slate-800 mb-2' placeholder='Opponent Name (e.g. Eagles)'>
+                        <input type='text' id='recordVenue' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-slate-800 mb-2' placeholder='Venue Name (e.g. Main Complex)'>
+                        <div class='flex gap-2 mb-2'>
+                            <input type='number' id='recordPts' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-1/3 outline-none focus:border-slate-800' placeholder='{{ stat_labels.l1 }}'>
+                            <input type='number' id='recordAst' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-1/3 outline-none focus:border-slate-800' placeholder='{{ stat_labels.l2 }}'>
+                            <input type='number' id='recordReb' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-1/3 outline-none focus:border-slate-800' placeholder='{{ stat_labels.l3 }}'>
+                        </div>
+                        <div class='flex gap-2 mb-2'>
+                            <input type='number' id='recordFgMade' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-1/2 outline-none focus:border-slate-800' placeholder='Field Goals Made'>
+                            <input type='number' id='recordFgAttempted' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-1/2 outline-none focus:border-slate-800' placeholder='Field Goals Attempted'>
+                        </div>
+                        <select id='recordResult' class='appearance-none bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-slate-800 cursor-pointer'>
+                            <option value="true" class="text-emerald-600 font-bold">WIN</option>
+                            <option value="false" class="text-rose-600 font-bold">LOSS</option>
+                        </select>
+                    ` 
+                },
+                'performance': { icon: 'activity', color: 'bg-emerald-500', title: 'LOG PERFORMANCE', sub: 'Attendance & Accuracy', btnLabel: 'SAVE RECORD',
+                    html: `
+                        <select id='perfMetric' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-emerald-500 mb-2'>
+                            <option value="Attendance Consistency">Attendance Consistency</option>
+                            <option value="Field Goal %">Field Goal %</option>
+                            <option value="3-Point Accuracy">3-Point Accuracy</option>
+                            <option value="Attack Success %">Attack Success %</option>
+                            <option value="Spike Success %">Spike Success %</option>
+                        </select>
+                        <input type='number' id='perfValue' class='bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold w-full outline-none focus:border-emerald-500' placeholder='Percentage Value (e.g. 85)'>
+                    `
+                }
+            };
+
+            const cfg = configs[action];
+            
+            // Build Icon
+            const iconContainer = document.querySelector('#modalHeader > div:first-child');
+            if(iconContainer && iconContainer.tagName === 'DIV' && iconContainer.classList.contains('p-3')) {
+                iconContainer.remove(); // clear existing
+            }
+            const el = document.createElement('div');
+            el.className = `${cfg.color} text-white p-3 rounded-2xl shadow-lg`;
+            el.innerHTML = `<i data-lucide="${cfg.icon}" class="w-6 h-6"></i>`;
+            document.getElementById('modalHeader').prepend(el);
+
+            title.innerText = cfg.title;
+            subtitle.innerText = cfg.sub;
+            body.innerHTML = cfg.html;
+
+            document.getElementById('modalSubmitBtn').innerText = cfg.btnLabel || 'APPLY TO DATABASE';
+
+            lucide.createIcons();
+
+            // Animate In Context
+            setTimeout(() => {
+                content.classList.remove('scale-95', 'opacity-0');
+                content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+        };
+
+        window.closeModal = function(force) {
+            if(force === true || force.target && force.target.id === 'modalOverlay') {
+                const overlay = document.getElementById('modalOverlay');
+                const content = document.getElementById('modalContent');
+                content.classList.add('scale-95', 'opacity-0');
+                content.classList.remove('scale-100', 'opacity-100');
+                setTimeout(() => { overlay.classList.add('hidden'); }, 300);
+            }
+        };
+
+        window.applyToDatabase = async function() {
+            // Validate/Update State based on action
+            const valObj = document.getElementById('modalInputObj');
+            const data = players[currentActivePlayer];
+            const currentUserName = '{{ request.user.get_full_name|default:request.user.username|upper }}';
+
+            if(currentModalAction === 'goal' && valObj && valObj.value) {
+                data.goals.current = parseInt(valObj.value);
+            } else if(currentModalAction === 'note' && valObj && valObj.value) {
+                const noteText = valObj.value;
+                data.evaluations.unshift({
+                    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}).toUpperCase(),
+                    coach: currentUserName,
+                    text: noteText
+                });
+
+                // NEW: Sync Evaluation to Backend
+                const athleteId = currentActivePlayer;
+                if (athleteId) {
+                    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    if (token) {
+                        const fd = new FormData();
+                        fd.append('csrfmiddlewaretoken', token);
+                        fd.append('notes', noteText);
+                        
+                        try {
+                            await fetch(`/athletes/monitor-progress/add-evaluation/${athleteId}/`, {
+                                method: 'POST',
+                                body: fd
+                            });
+                        } catch (e) { console.error("Evaluation sync failed", e); }
+                    }
+                }
+            } else if(currentModalAction === 'feedback' && valObj && valObj.value) {
+                const athleteId = currentActivePlayer;
+                const msgText = valObj.value;
+
+                data.evaluations.unshift({
+                    date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}).toUpperCase(),
+                    coach: currentUserName,
+                    text: msgText
+                });
+
+                if (athleteId) {
+                    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    if (token) {
+                        const fd = new FormData();
+                        fd.append('csrfmiddlewaretoken', token);
+                        fd.append('notes', msgText);
+                        
+                        try {
+                            await fetch(`/athletes/monitor-progress/add-evaluation/${athleteId}/`, {
+                                method: 'POST',
+                                body: fd
+                            });
+                        } catch (e) { console.error("Feedback sync failed", e); }
+                    }
+                }
+            } else if(currentModalAction === 'report' && valObj && valObj.value) {
+                const athleteId = currentActivePlayer;
+                const msgText = valObj.value;
+                if (athleteId) {
+                    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    if (token) {
+                        const fd = new FormData();
+                        fd.append('csrfmiddlewaretoken', token);
+                        fd.append('athlete_id', athleteId);
+                        fd.append('description', msgText);
+                        fd.append('date', new Date().toISOString().split('T')[0]);
+                        
+                        try {
+                            await fetch(`{% url 'management:log_incident' %}`, {
+                                method: 'POST',
+                                body: fd
+                            });
+                        } catch (e) { console.error("Report sync failed", e); }
+                    }
+                }
+            } else if(currentModalAction === 'performance') {
+                const metric = document.getElementById('perfMetric')?.value;
+                const pValStr = document.getElementById('perfValue')?.value;
+                
+                if (metric === 'Attendance Consistency') {
+                    data.attendance = parseInt(pValStr) || 0;
+                }
+                
+                const athleteId = currentActivePlayer; 
+                if (athleteId && pValStr) {
+                    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    if (token) {
+                        const fd = new FormData();
+                        fd.append('csrfmiddlewaretoken', token);
+                        fd.append('metric', metric);
+                        fd.append('value', pValStr);
+                        
+                        try {
+                            await fetch(`/athletes/monitor-progress/add-performance/${athleteId}/`, {
+                                method: 'POST',
+                                body: fd
+                            });
+                        } catch (e) { console.error("Performance sync failed", e); }
+                    }
+                }
+            } else if(currentModalAction === 'record') {
+                const opp = document.getElementById('recordOpponent').value || 'Unknown Opponent';
+                const venueStr = document.getElementById('recordVenue').value || 'Live System';
+                const pts = parseInt(document.getElementById('recordPts').value) || 0;
+                const ast = parseInt(document.getElementById('recordAst').value) || 0;
+                const reb = parseInt(document.getElementById('recordReb').value) || 0;
+                const fgMade = parseInt(document.getElementById('recordFgMade').value) || 0;
+                const fgAttempted = parseInt(document.getElementById('recordFgAttempted').value) || 0;
+                const win = document.getElementById('recordResult').value === 'true';
+
+                data.games.unshift({
+                   opponent: opp, subtitle: 'ADDED VIA UI', date: new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}).toUpperCase(), venue: venueStr, pts: pts, ast: ast, reb: reb, win: win 
+                });
+
+                // Update local wins/losses count
+                if (win) {
+                    data.wins = (data.wins || 0) + 1;
+                } else {
+                    data.losses = (data.losses || 0) + 1;
+                }
+
+                // NEW: Sync with Basketball Analytics Backend
+                // This ensures the "Top Performer" and "Team Roster Rankings" are updated
+                const athleteId = currentActivePlayer; 
+                if (athleteId) {
+                    const token = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+                    if (token) {
+                        const fd = new FormData();
+                        fd.append('csrfmiddlewaretoken', token);
+                        
+                        // Send individual game stats for incrementing in backend
+                        fd.append('opponent', opp);
+                        fd.append('venue', venueStr);
+                        fd.append('points', String(pts));
+                        fd.append('assists', String(ast));
+                        fd.append('rebounds', String(reb));
+                        fd.append('win', win ? 'true' : 'false');
+                        fd.append('field_goal_made', String(fgMade));
+                        fd.append('field_goal_attempted', String(fgAttempted));
+                        
+                        fd.append('speed', String(data.speed || 0)); 
+
+                        try {
+                            // Corrected URL: /athletes/api/update-basketball-stats/<id>/
+                            await fetch(`/athletes/api/update-basketball-stats/${athleteId}/`, {
+                                method: 'POST',
+                                body: fd
+                            });
+                        } catch (e) { console.error("Sync failed", e); }
+                    }
+                }
+            }
+
+            // Apply & Re-render
+            renderDashboard(currentActivePlayer);
+            closeModal(true);
+            showToast('TRANSACTION VERIFIED');
+        };
+
+        window.showToast = function(message) {
+            const toast = document.getElementById('toastNotification');
+            document.getElementById('toastMessage').innerText = message;
+            
+            toast.classList.remove('hidden');
+            toast.classList.add('toast-animate');
+            
+            setTimeout(() => {
+                toast.classList.remove('toast-animate');
+                toast.classList.add('hidden');
+            }, 3000); // hide after 3 sec
+        };
+
+        /* Custom Dashboard Methods removed: toggleDarkMode, toggleSidebar */
+    </script>
+    </div>
+</div>
+{% endblock %}

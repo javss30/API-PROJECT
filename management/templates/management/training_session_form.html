@@ -1,0 +1,105 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0 fw-bold"><i class="fas fa-calendar-plus me-2"></i>{% if form.instance.pk %}Edit{% else %}Book{% endif %} Session</h2>
+                    <p class="mb-0 opacity-75">Schedule training for your athlete</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post" id="sessionForm">
+                        {% csrf_token %}
+                        <div class="mb-4">
+                            {% bootstrap_form form %}
+                        </div>
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                                <i class="fas fa-save me-2"></i>Save Session
+                            </button>
+                            <a href="{% url 'management:training_session_list' %}" class="btn btn-outline-secondary btn-lg rounded-pill mt-2">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{ athlete_sports_map|json_script:"athlete-sports-data" }}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const athleteSelect = document.querySelector('select[name="athlete"]');
+    const sportsSelect = document.querySelector('select[name="sports_selection"]');
+    const sportsData = JSON.parse(document.getElementById('athlete-sports-data').textContent);
+
+    if (athleteSelect && sportsSelect) {
+        function updateSports() {
+            const athleteId = athleteSelect.value;
+            const sports = sportsData[athleteId];
+            
+            if (sports) {
+                const sportToSelect = sports.split(',')[0].trim();
+                for (let i = 0; i < sportsSelect.options.length; i++) {
+                    if (sportsSelect.options[i].value === sportToSelect) {
+                        sportsSelect.selectedIndex = i;
+                        break;
+                    }
+                }
+            } else {
+                sportsSelect.selectedIndex = 0;
+            }
+        }
+
+        athleteSelect.addEventListener('change', updateSports);
+        // Initial call in case of edit or browser pre-fill
+        updateSports();
+    }
+});
+</script>
+
+<style>
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .form-control, .form-select {
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+    }
+    /* Remove arrow from the sports dropdown since it's auto-filled */
+    select[name="sports_selection"] {
+        background-image: none !important;
+        padding-right: 1rem !important;
+        pointer-events: none; /* Make it read-only */
+        background-color: #e9ecef !important; /* Standard read-only color */
+        cursor: default;
+    }
+    /* Dark Mode Styling */
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .form-control, body.dark-mode .form-select {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+    body.dark-mode select[name="sports_selection"] {
+        background-color: #2b3035 !important;
+        color: #adb5bd;
+    }
+</style>
+{% endblock %}

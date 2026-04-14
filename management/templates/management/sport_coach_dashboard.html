@@ -1,0 +1,882 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    {% if coach_sport == 'Basketball' %}
+        {% with primary_bg='bg-orange' primary_text='text-orange' sport_icon='fa-basketball-ball' secondary_bg='bg-dark' chart_color='#fd7e14' %}
+            {% include "management/sport_dashboard_header.html" %}
+        {% endwith %}
+    {% elif coach_sport == 'Volleyball' %}
+        {% with primary_bg='bg-info' primary_text='text-info' sport_icon='fa-volleyball-ball' secondary_bg='bg-primary' chart_color='#0dcaf0' %}
+            {% include "management/sport_dashboard_header.html" %}
+        {% endwith %}
+    {% elif coach_sport == 'Sepak Takraw' %}
+        {% with primary_bg='bg-success' primary_text='text-success' sport_icon='fa-circle-notch' secondary_bg='bg-dark' chart_color='#198754' %}
+            {% include "management/sport_dashboard_header.html" %}
+        {% endwith %}
+    {% endif %}
+
+    <!-- Summary Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Card 1: Total Athletes -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'management:athlete_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 {% if coach_sport == 'Basketball' %}bg-orange{% elif coach_sport == 'Volleyball' %}bg-info{% else %}bg-success{% endif %} text-white overflow-hidden h-100">
+                    <div class="card-body p-4 position-relative">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-white {% if coach_sport == 'Basketball' %}text-orange{% elif coach_sport == 'Volleyball' %}text-info{% else %}text-success{% endif %} rounded-3 p-3">
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                            <div class="text-end">
+                                <h6 class="text-uppercase fw-semibold mb-0 opacity-75">Total Athletes</h6>
+                                <h2 class="display-6 fw-bold mb-0">{{ athletes_count }}</h2>
+                            </div>
+                        </div>
+                        <div class="small fw-bold"><i class="fas fa-chart-line me-1"></i>Active Roster</div>
+                        <i class="fas {% if coach_sport == 'Basketball' %}fa-basketball-ball{% elif coach_sport == 'Volleyball' %}fa-volleyball-ball{% else %}fa-circle-notch{% endif %} position-absolute top-50 start-100 translate-middle opacity-25" style="font-size: 8rem; margin-right: 20px;"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Card 2: Training Sessions -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'management:training_session_list' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 bg-dark text-white overflow-hidden h-100">
+                    <div class="card-body p-4 position-relative">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-warning text-dark rounded-3 p-3">
+                                <i class="fas fa-calendar-alt fa-2x"></i>
+                            </div>
+                            <div class="text-end">
+                                <h6 class="text-uppercase fw-semibold mb-0 opacity-75">Active Sessions</h6>
+                                <h2 class="display-6 fw-bold mb-0">{{ active_sessions_count }}</h2>
+                            </div>
+                        </div>
+                        <div class="small fw-bold"><i class="fas fa-clock me-1"></i>Next: Team Practice</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <!-- Card 3: Top Performer -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'management:basketball_analytics' %}?athlete_id={{ top_athlete.id }}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm rounded-4 bg-success text-white overflow-hidden h-100" style="cursor: pointer;">
+                <div class="card-body p-4 position-relative">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="icon-shape bg-white text-success rounded-3 p-3">
+                            <i class="fas fa-trophy fa-2x"></i>
+                        </div>
+                        <div class="text-end text-truncate" style="max-width: 150px;">
+                            <h6 class="text-uppercase fw-semibold mb-0 opacity-75">Top Performer</h6>
+                            <h4 class="fw-bold mb-0">{{ top_athlete.user.username|default:"N/A" }}</h4>
+                        </div>
+                    </div>
+                    <div class="small fw-bold">
+                        {% if top_athlete_trend == 'Extensive' or top_athlete_trend == 'Improving' or top_athlete_trend == 'up' %}
+                            <i class="fas fa-arrow-up me-1 text-success"></i>Excellent Performance Trend
+                        {% elif top_athlete_trend == 'Declining' or top_athlete_trend == 'down' %}
+                            <i class="fas fa-arrow-down me-1 text-danger"></i>Needs Improvement Trend
+                        {% else %}
+                            <i class="fas fa-minus me-1"></i>Stable Performance Trend
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            </a>
+        </div>
+        <!-- Card 4: High-End Athlete Compliance & Attendance -->
+        <div class="col-xl-3 col-md-6">
+            <a href="{% url 'management:needs_attention' %}" class="text-decoration-none">
+                <div class="card border-0 shadow-sm rounded-4 {% if needs_attention %}bg-danger{% else %}bg-secondary bg-opacity-75{% endif %} text-white overflow-hidden h-100" style="cursor: pointer;">
+                    <div class="card-body p-4 position-relative">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="icon-shape bg-white {% if needs_attention %}text-danger{% else %}text-secondary{% endif %} rounded-3 p-3">
+                                <i class="fas {% if needs_attention %}fa-exclamation-triangle{% else %}fa-check-circle{% endif %} fa-2x"></i>
+                            </div>
+                            <div class="text-end" style="max-width: 210px;">
+                                <h6 class="text-uppercase fw-semibold mb-0 opacity-75" style="white-space: normal; line-height: 1.15;">Compliance & Attendance</h6>
+                                <h4 class="fw-bold mb-0">{% if needs_attention %}{{ needs_attention.user.username }}{% else %}All Good{% endif %}</h4>
+                            </div>
+                        </div>
+                        <div class="small fw-bold"><i class="fas fa-user-clock me-1"></i>{% if needs_attention %}Open high-end compliance dashboard{% else %}No critical issues{% endif %}</div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Performer Detailed Profile (Requirement 2 & 14) -->
+    {% if top_athlete %}
+    <div id="top-performer-profile" class="mb-4" style="display: none !important;">
+        <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+            <div class="card-header {% if coach_sport == 'Basketball' %}bg-orange{% elif coach_sport == 'Volleyball' %}bg-info{% else %}bg-success{% endif %} text-white p-4 position-relative">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-lg me-3">
+                            {% if top_athlete.profile_picture %}
+                                <img src="{{ top_athlete.profile_picture.url }}" class="rounded-circle border border-3 border-white shadow" style="width: 80px; height: 80px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-white text-{{ primary_text }} rounded-circle d-flex align-items-center justify-content-center shadow" style="width: 80px; height: 80px;">
+                                    <i class="fas fa-user fa-2x"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <h2 class="fw-bold mb-1">{{ top_athlete.user.get_full_name|default:top_athlete.user.username }}</h2>
+                            <p class="mb-0 opacity-75"><span class="badge bg-white text-dark me-2">{{ top_athlete_stats.position }}</span> #{{ top_athlete_stats.jersey_no }} | {{ top_athlete_stats.year }}</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" onclick="return false;"></button>
+                </div>
+            </div>
+            <div class="card-body p-4 bg-white">
+                <div class="row g-4">
+                    <!-- Performance Metrics -->
+                    <div class="col-lg-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="fw-bold text-uppercase text-muted small mb-0">Performance Analytics</h6>
+                            <span class="badge bg-soft-success text-success rounded-pill px-3">Top 1%</span>
+                        </div>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-bold">{{ top_athlete_stats.m1_label }}</span>
+                                <span class="small fw-bold">{{ top_athlete_stats.m1_val }}%</span>
+                            </div>
+                            <div class="progress rounded-pill shadow-sm" style="height: 12px;">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ top_athlete_stats.m1_val }}%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-bold">{{ top_athlete_stats.m2_label }}</span>
+                                <span class="small fw-bold">{{ top_athlete_stats.m2_val }}%</span>
+                            </div>
+                            <div class="progress rounded-pill shadow-sm" style="height: 12px;">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ top_athlete_stats.m2_val }}%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="small fw-bold">Attendance Consistency</span>
+                                <span class="small fw-bold">{{ top_athlete_stats.attendance_rate }}%</span>
+                            </div>
+                            <div class="progress rounded-pill shadow-sm" style="height: 12px;">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ top_athlete_stats.attendance_rate }}%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-light p-3 rounded-4 border-start border-4 {% if coach_sport == 'Basketball' %}border-warning{% elif coach_sport == 'Volleyball' %}border-info{% else %}border-success{% endif %}">
+                            <h6 class="fw-bold small text-uppercase text-muted mb-2"><i class="fas fa-quote-left me-2"></i>Coach's Evaluation</h6>
+                            <p class="fst-italic small mb-0 text-dark">"{{ top_athlete_stats.evaluation }}"</p>
+                        </div>
+                    </div>
+
+                    <!-- Physical Conditioning -->
+                    <div class="col-lg-4 border-start border-end px-4">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Physical Attributes</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-4 text-center border hover-lift">
+                                    <i class="fas fa-stopwatch {% if coach_sport == 'Basketball' %}text-orange{% elif coach_sport == 'Volleyball' %}text-info{% else %}text-success{% endif %} mb-2 fa-lg"></i>
+                                    <h4 class="fw-bold mb-0">{{ top_athlete_stats.sprint_time }}s</h4>
+                                    <small class="text-muted smallest text-uppercase fw-bold">20M Sprint</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-4 text-center border hover-lift">
+                                    <i class="fas fa-arrow-up text-primary mb-2 fa-lg"></i>
+                                    <h4 class="fw-bold mb-0">{{ top_athlete_stats.vertical_leap }}"</h4>
+                                    <small class="text-muted smallest text-uppercase fw-bold">Vertical Leap</small>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="p-3 bg-dark text-white rounded-4 text-center hover-lift">
+                                    <div class="d-flex justify-content-around align-items-center">
+                                        <div>
+                                            <i class="fas fa-running text-warning mb-1"></i>
+                                            <h5 class="fw-bold mb-0">{{ top_athlete_stats.agility_score }}</h5>
+                                            <small class="opacity-75 smallest text-uppercase">Agility Score</small>
+                                        </div>
+                                        <div class="vr bg-white opacity-25" style="height: 40px;"></div>
+                                        <div>
+                                            <i class="fas fa-weight text-info mb-1"></i>
+                                            <h5 class="fw-bold mb-0">{{ top_athlete.weight|default:"--" }}kg</h5>
+                                            <small class="opacity-75 smallest text-uppercase">Weight</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-soft-success border-0 rounded-4 d-flex align-items-center p-3">
+                            <div class="icon-circle bg-white text-success me-3 p-2 rounded-circle shadow-sm">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-0 small">Medical Clearance</h6>
+                                <p class="mb-0 smallest text-muted">FIT FOR COMPETITION</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Progress -->
+                    <div class="col-lg-4">
+                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Recent Progress</h6>
+                        <div class="activity-timeline-modern">
+                            {% for session in top_athlete_stats.sessions %}
+                            <div class="timeline-item d-flex mb-3 position-relative">
+                                <div class="timeline-marker bg-{{ session.status|lower|default:'success' }} rounded-circle me-3 mt-1" style="width: 12px; height: 12px; z-index: 1;"></div>
+                                <div class="timeline-content flex-grow-1 border-bottom pb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <p class="mb-0 small fw-bold text-dark">{{ session.session_date|date:"M d, Y" }}</p>
+                                        <span class="badge {% if session.status == 'Completed' %}bg-soft-success text-success{% else %}bg-soft-danger text-danger{% endif %} smallest rounded-pill">{{ session.status }}</span>
+                                    </div>
+                                    <p class="text-muted smallest mb-0">{{ session.notes|truncatechars:45|default:"Regular training session" }}</p>
+                                </div>
+                            </div>
+                            {% empty %}
+                            <p class="text-muted small">No recent practice data.</p>
+                            {% endfor %}
+                        </div>
+                        <div class="text-center mt-4">
+                            <a href="{% url 'management:basketball_analytics' %}?athlete_id={{ top_athlete.id }}" class="btn btn-sm btn-outline-dark rounded-pill px-4 fw-bold">
+                                Full Analytics <i class="fas fa-external-link-alt ms-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row g-4 mb-4">
+        <!-- Interactive Performance Chart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Athlete Performance Analytics</h5>
+                        <small class="text-muted">Interactive team trend for attendance, field goal percentage, assists, and rebounds.</small>
+                    </div>
+                    <div class="btn-group btn-group-sm" id="performance-period-toggle">
+                        <button type="button" class="btn btn-outline-dark active" data-period="weekly">Weekly</button>
+                        <button type="button" class="btn btn-outline-dark" data-period="monthly">Monthly</button>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div id="performance-metric-legend" class="d-flex flex-wrap gap-2 mb-3"></div>
+                    <div id="sport-performance-chart" style="min-height: 350px;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Team Stats Summary -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">Team Averages ({{ coach_sport }})</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="row text-center mb-4">
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded-4">
+                                <h6 class="small text-muted mb-1">Win/Loss Ratio</h6>
+                                <h4 class="fw-bold mb-0 text-dark">{{ team.win_loss_ratio|default:"0.0" }}%</h4>
+                            </div>
+                        </div>
+                        {% for metric, value in team_averages.items %}
+                        <div class="col-6 mb-3">
+                            <div class="p-3 bg-light rounded-4">
+                                <h6 class="small text-muted mb-1">{{ metric }}</h6>
+                                <h4 class="fw-bold mb-0 text-dark">{{ value }}</h4>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <h6 class="fw-bold small text-uppercase text-muted mb-3">Quick Actions</h6>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'management:athlete_list' %}" class="btn btn-outline-dark rounded-3 text-start py-2">
+                            <i class="fas fa-search me-2 {% if coach_sport == 'Basketball' %}text-warning{% elif coach_sport == 'Volleyball' %}text-info{% else %}text-success{% endif %}"></i> Search Athletes
+                        </a>
+                        <a href="{% url 'management:training_session_create' %}" class="btn btn-outline-dark rounded-3 text-start py-2">
+                            <i class="fas fa-calendar-plus me-2 {% if coach_sport == 'Basketball' %}text-warning{% elif coach_sport == 'Volleyball' %}text-info{% else %}text-success{% endif %}"></i> Add Schedule
+                        </a>
+                        <button class="btn btn-outline-dark rounded-3 text-start py-2" data-bs-toggle="modal" data-bs-target="#announcementModal">
+                            <i class="fas fa-bullhorn me-2 {% if coach_sport == 'Basketball' %}text-warning{% elif coach_sport == 'Volleyball' %}text-info{% else %}text-success{% endif %}"></i> Send Announcement
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Athlete List and Search -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Your Roster</h5>
+                    <a href="{% url 'management:athlete_list' %}" class="btn btn-sm btn-warning rounded-pill px-3">View All</a>
+                </div>
+                <div class="card-body p-4">
+                    <div class="input-group mb-3 shadow-sm rounded-pill overflow-hidden border">
+                        <span class="input-group-text bg-white border-0"><i class="fas fa-search text-muted"></i></span>
+                        <input type="text" class="form-control border-0" placeholder="Search athletes by name...">
+                    </div>
+                    <div class="list-group list-group-flush">
+                        {% for athlete in athletes|slice:":6" %}
+                        <div class="list-group-item px-0 border-0 mb-2 hover-bg p-2 rounded-3">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm me-3">
+                                    {% if athlete.profile_picture %}
+                                        <img src="{{ athlete.profile_picture.url }}" class="rounded-circle shadow-sm" style="width: 40px; height: 40px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="bg-light rounded-circle p-2 text-warning"><i class="fas fa-user"></i></div>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0 fw-bold text-dark">
+                                        {{ athlete.user.get_full_name|default:athlete.user.username }}
+                                        <span class="text-muted fw-normal ms-1 small">#{{ athlete.jersey_number|default:"--" }}</span>
+                                    </h6>
+                                    <small class="text-muted">Jersey Number: {{ athlete.jersey_number|default:"#--" }}</small>
+                                </div>
+                                <div>
+                                    <a href="{% url 'management:basketball_analytics' %}?athlete_id={{ athlete.id }}" class="btn btn-sm btn-outline-warning rounded-circle">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Comparison Side-by-Side -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">Side-by-Side Comparison</h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <i class="fas fa-users-viewfinder fa-4x text-light mb-3"></i>
+                    <h6 class="fw-bold text-dark">Analyze Player Matchups</h6>
+                    <p class="text-muted small">Compare performance metrics between your athletes side-by-side.</p>
+                    <a href="{% url 'management:player_comparison' %}" class="btn btn-dark rounded-pill px-4 mt-2">Open Comparison Tool</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mt-4">
+        <!-- Activity Feed -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Activity Feed</h5>
+                    <span class="badge bg-soft-warning text-warning">Live Updates</span>
+                </div>
+                <div class="card-body p-4">
+                    <div class="activity-timeline">
+                        {% for activity in activity_feed %}
+                        <div class="activity-item d-flex mb-4">
+                            <div class="activity-icon me-3">
+                                <div class="icon-circle bg-light p-2 rounded-circle border border-{{ activity.status|default:'warning' }}">
+                                    <i class="fas {{ activity.icon }} small text-{{ activity.status|default:'warning' }}"></i>
+                                </div>
+                            </div>
+                            <div class="activity-content flex-grow-1">
+                                <div class="d-flex justify-content-between">
+                                    <p class="mb-0 small"><span class="fw-bold text-dark">{{ activity.athlete }}</span> {{ activity.detail }}</p>
+                                </div>
+                                <p class="text-muted smallest mb-0">{{ activity.date|date:"M d, Y" }}</p>
+                                <div class="progress mt-1" style="height: 4px;">
+                                    <div class="progress-bar bg-{{ activity.status|default:'warning' }}" style="width: 100%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="text-muted small text-center">No recent athlete activity recorded.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Announcements & Notifications -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold mb-0 text-dark">Team Alerts</h5>
+                    <span class="badge bg-soft-warning text-warning">{{ team_alerts.injury_count|add:team_alerts.attendance_count }} active</span>
+                </div>
+                <div class="card-body p-4">
+                    <button class="alert alert-soft-danger border-0 rounded-4 mb-3 p-3 w-100 text-start alert-card-btn" type="button" data-alert-toggle="#injuryAlertsPanel" aria-expanded="false" aria-controls="injuryAlertsPanel">
+                        <div class="d-flex">
+                            <i class="fas fa-heartbeat mt-1 me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 small">Injury Warning</h6>
+                                <p class="mb-0 smallest text-muted">
+                                    {% if team_alerts.injury_count %}
+                                        {{ team_alerts.injury_count }} athlete{{ team_alerts.injury_count|pluralize }} currently flagged with an injury status.
+                                    {% else %}
+                                        No active injuries reported across the current roster.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </button>
+                    <div class="alert-details-panel mb-3 d-none" id="injuryAlertsPanel">
+                        <div class="border rounded-4 p-3 bg-light-subtle">
+                            {% if team_alerts.injured_athletes %}
+                                {% for item in team_alerts.injured_athletes %}
+                                <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                    <div>
+                                        <div class="fw-bold small text-dark">{{ item.name }}</div>
+                                        <div class="smallest text-muted">{{ item.status }}</div>
+                                    </div>
+                                    <a href="{% url 'management:athlete_detail' item.id %}" class="btn btn-sm btn-outline-danger rounded-pill">View</a>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="smallest text-muted mb-0">No injury alerts for this roster.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <button class="alert alert-soft-warning border-0 rounded-4 mb-3 p-3 w-100 text-start alert-card-btn" type="button" data-alert-toggle="#attendanceAlertsPanel" aria-expanded="false" aria-controls="attendanceAlertsPanel">
+                        <div class="d-flex">
+                            <i class="fas fa-clock mt-1 me-3"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1 small">Attendance Alert</h6>
+                                <p class="mb-0 smallest text-muted">
+                                    {% if team_alerts.attendance_count %}
+                                        {{ team_alerts.attendance_count }} athlete{{ team_alerts.attendance_count|pluralize }} have missed at least one tracked session.
+                                    {% else %}
+                                        No attendance issues detected from current session records.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </button>
+                    <div class="alert-details-panel mb-3 d-none" id="attendanceAlertsPanel">
+                        <div class="border rounded-4 p-3 bg-light-subtle">
+                            {% if team_alerts.attendance_athletes %}
+                                {% for item in team_alerts.attendance_athletes %}
+                                <div class="d-flex justify-content-between align-items-center py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                    <div>
+                                        <div class="fw-bold small text-dark">{{ item.name }}</div>
+                                        <div class="smallest text-muted">{{ item.missed_sessions }} missed of {{ item.total_sessions }} tracked sessions • {{ item.attendance_rate }}% attendance</div>
+                                    </div>
+                                    <a href="{% url 'management:needs_attention' %}" class="btn btn-sm btn-outline-warning rounded-pill">Review</a>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <p class="smallest text-muted mb-0">Attendance is clear for the current roster.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <h6 class="fw-bold small text-uppercase text-muted mb-3">Latest Announcements</h6>
+                    <div class="list-group list-group-flush">
+                        {% for item in announcements %}
+                        <div class="list-group-item px-0 border-0 mb-2">
+                            <h6 class="fw-bold mb-1 text-dark small">{{ item.title }}</h6>
+                            <p class="smallest text-muted mb-0">{{ item.content|truncatechars:60 }}</p>
+                            <small class="smallest text-orange">{{ item.created_at|date:"M d" }}</small>
+                        </div>
+                        {% empty %}
+                        <p class="smallest text-muted">No active announcements.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Communication -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0 text-dark">Quick Feedback</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form action="{% url 'management:evaluation_create' %}" method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Select Athlete</label>
+                            <select name="athlete" class="form-select rounded-3">
+                                {% for a in athletes %}
+                                <option value="{{ a.id }}">{{ a.user.get_full_name|default:a.user.username }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Coach Notes</label>
+                            <textarea name="notes" class="form-control rounded-3" rows="3" placeholder="Write feedback for the athlete..."></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-dark rounded-pill">Save Feedback</button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4 text-center">
+                        <div class="btn-group btn-group-sm w-100">
+                            <a href="{% url 'management:message_athlete' %}" class="btn btn-outline-dark rounded-pill me-2 position-relative">
+                                <i class="fas fa-envelope me-1"></i> Messages
+                                {% if coach_unread_messages_count %}
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger p-1 border border-white coach-msg-nav-dot" title="{{ coach_unread_messages_count }} unread from athletes">
+                                    <span class="visually-hidden">Unread messages</span>
+                                </span>
+                                {% endif %}
+                            </a>
+                    <a href="{% url 'management:generate_report' %}" class="btn btn-outline-dark rounded-pill"><i class="fas fa-file-pdf me-1"></i> Reports</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send Announcement Modal -->
+<div class="modal fade" id="announcementModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pt-4 px-4">
+                <h5 class="modal-title fw-bold">Post Team Announcement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form action="{% url 'management:announcement_create' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="sport" value="{{ coach_sport }}">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Title</label>
+                        <input type="text" name="title" class="form-control rounded-3" placeholder="e.g., Mandatory Practice Change" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small">Message</label>
+                        <textarea name="content" class="form-control rounded-3" rows="4" placeholder="Type your message here..." required></textarea>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn {% if coach_sport == 'Basketball' %}btn-warning{% elif coach_sport == 'Volleyball' %}btn-info text-white{% else %}btn-success{% endif %} fw-bold rounded-pill">Publish Announcement</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals for each athlete -->
+{% for athlete in athletes|slice:":6" %}
+{% endfor %}
+
+<style>
+    :root {
+        --bs-orange: #fd7e14;
+        --bs-soft-warning: rgba(255, 193, 7, 0.1);
+        --bs-soft-danger: rgba(220, 53, 69, 0.1);
+    }
+    .bg-orange { background-color: var(--bs-orange); }
+    .text-orange { color: var(--bs-orange); }
+    .alert-soft-danger { background-color: var(--bs-soft-danger); color: #dc3545; }
+    .alert-soft-warning { background-color: var(--bs-soft-warning); color: #856404; }
+    .bg-soft-warning { background-color: var(--bs-soft-warning); }
+    
+    .coach-msg-nav-dot { min-width: 0.55rem; min-height: 0.55rem; }
+    .rounded-4 { border-radius: 1.25rem !important; }
+    .icon-shape { width: 50px; height: 50px; display: inline-flex; align-items: center; justify-content: center; }
+    .card { transition: all 0.3s ease; }
+    .card:hover { transform: translateY(-3px); }
+    .hover-bg:hover { background-color: #f8f9fa; }
+    .smallest { font-size: 0.75rem; }
+    .metric-chip {
+        border: 1px solid #dee2e6;
+        background: #fff;
+        border-radius: 999px;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.45rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .metric-chip.is-off {
+        opacity: 0.45;
+    }
+    .metric-chip-dot {
+        width: 0.65rem;
+        height: 0.65rem;
+        border-radius: 999px;
+        display: inline-block;
+        flex: 0 0 auto;
+    }
+    .alert-card-btn {
+        box-shadow: none;
+    }
+    .alert-card-btn:hover {
+        transform: translateY(-1px);
+    }
+    .alert-card-btn:focus {
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.15);
+    }
+    .alert-details-panel {
+        display: none;
+    }
+    .alert-details-panel.is-open {
+        display: block;
+    }
+    
+    /* Interactive Dashboard Elements */
+    .hover-lift { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .hover-lift:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    
+    .timeline-item::before {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: 20px;
+        bottom: -10px;
+        width: 2px;
+        background: #e9ecef;
+        z-index: 0;
+    }
+    .timeline-item:last-child::before { display: none; }
+    
+    .progress-bar-animated {
+        animation: progress-bar-stripes 1s linear infinite;
+    }
+
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .alert-soft-success { background-color: rgba(25, 135, 84, 0.1); color: #198754; }
+    
+    /* ApexCharts Dark Mode Adaptability */
+    body.dark-mode .card { background-color: #2b3035; color: #f8f9fa; border-color: #3d4246; }
+    body.dark-mode .card-header, body.dark-mode .card-footer { border-color: #3d4246 !important; }
+    body.dark-mode .text-dark { color: #f8f9fa !important; }
+    body.dark-mode .bg-light { background-color: #343a40 !important; }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if chart_data_json %}
+        const chartPayload = JSON.parse('{{ chart_data_json|safe }}');
+        const chartRoot = document.querySelector("#sport-performance-chart");
+        const toggleButtons = Array.from(document.querySelectorAll('#performance-period-toggle [data-period]'));
+        const legendRoot = document.querySelector('#performance-metric-legend');
+        const palette = ['#212529', '#198754', '#0dcaf0', '#fd7e14', '#20c997'];
+        let activePeriod = chartPayload.defaultPeriod || 'weekly';
+        let chart = null;
+        let hiddenSeries = new Set();
+
+        function getPeriodData(period) {
+            return chartPayload.periods?.[period] || { series: [], categories: [] };
+        }
+
+        function buildSeriesState(period) {
+            const periodData = getPeriodData(period);
+            return periodData.series.map((series, index) => ({
+                name: series.name,
+                color: palette[index % palette.length],
+                hidden: hiddenSeries.has(series.name),
+                values: series.data.map((point) => point.y),
+                rawValues: series.data.map((point) => point.raw)
+            }));
+        }
+
+        function buildOptions(period) {
+            const periodData = getPeriodData(period);
+            const seriesState = buildSeriesState(period);
+            const visibleSeries = seriesState
+                .filter((series) => !series.hidden)
+                .map((series) => ({
+                    name: series.name,
+                    data: series.values
+                }));
+
+            return {
+                series: visibleSeries,
+                chart: {
+                    height: 350,
+                    type: 'line',
+                    toolbar: { show: true },
+                    fontFamily: 'inherit',
+                    background: 'transparent',
+                    animations: { easing: 'easeinout', speed: 350 }
+                },
+                noData: {
+                    text: 'No performance data available for this period.'
+                },
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 4 },
+                colors: visibleSeries.map((series) => {
+                    const match = seriesState.find((item) => item.name === series.name);
+                    return match ? match.color : '#212529';
+                }),
+                xaxis: {
+                    categories: periodData.categories
+                },
+                yaxis: {
+                    min: 0,
+                    max: 100,
+                    tickAmount: 5,
+                    title: {
+                        text: chartPayload.yAxisTitle || 'Performance Score'
+                    }
+                },
+                tooltip: {
+                    shared: false,
+                    intersect: true,
+                    custom: function({ seriesIndex, dataPointIndex, w }) {
+                        const currentSeries = w.config.series?.[seriesIndex];
+                        if (!currentSeries) {
+                            return '';
+                        }
+                        const seriesMeta = seriesState.find((item) => item.name === currentSeries.name);
+                        const pointValue = currentSeries.data?.[dataPointIndex];
+                        if (pointValue === null || pointValue === undefined) {
+                            return '';
+                        }
+                        const dateLabel = periodData.categories?.[dataPointIndex] || '';
+                        const rawValue = seriesMeta?.rawValues?.[dataPointIndex];
+                        const rawLabel = rawValue ? `<div><strong>Recorded:</strong> ${rawValue}</div>` : '';
+                        return `
+                            <div class="p-2">
+                                <div><strong>${currentSeries.name}</strong></div>
+                                <div><strong>Score:</strong> ${pointValue}</div>
+                                ${rawLabel}
+                                <div><strong>Date:</strong> ${dateLabel}</div>
+                            </div>
+                        `;
+                    }
+                },
+                theme: {
+                    mode: document.body.classList.contains('dark-mode') ? 'dark' : 'light'
+                },
+                legend: {
+                    show: false
+                },
+                markers: { size: 5, strokeColors: '#fff', strokeWidth: 2 },
+                grid: {
+                    borderColor: '#e9ecef'
+                }
+            };
+        }
+
+        function renderMetricLegend(period) {
+            const seriesState = buildSeriesState(period);
+            legendRoot.innerHTML = '';
+            seriesState.forEach((series) => {
+                const chip = document.createElement('button');
+                chip.type = 'button';
+                chip.className = `metric-chip${series.hidden ? ' is-off' : ''}`;
+                chip.innerHTML = `<span class="metric-chip-dot" style="background:${series.color}"></span><span>${series.name}</span>`;
+                chip.addEventListener('click', function() {
+                    if (hiddenSeries.has(series.name)) {
+                        hiddenSeries.delete(series.name);
+                    } else {
+                        hiddenSeries.add(series.name);
+                    }
+                    updatePeriod(activePeriod);
+                });
+                legendRoot.appendChild(chip);
+            });
+        }
+
+        chart = new ApexCharts(chartRoot, buildOptions(activePeriod));
+        chart.render();
+
+        function syncPeriodButtons() {
+            toggleButtons.forEach((button) => {
+                const isActive = button.dataset.period === activePeriod;
+                button.classList.toggle('active', isActive);
+            });
+        }
+
+        function updatePeriod(period) {
+            activePeriod = period;
+            syncPeriodButtons();
+            renderMetricLegend(period);
+            chart.updateOptions(buildOptions(period), true, true);
+        }
+
+        toggleButtons.forEach((button) => {
+            button.addEventListener('click', function() {
+                const nextPeriod = button.dataset.period;
+                if (nextPeriod && nextPeriod !== activePeriod) {
+                    updatePeriod(nextPeriod);
+                }
+            });
+        });
+
+        syncPeriodButtons();
+        renderMetricLegend(activePeriod);
+        {% endif %}
+
+        const alertPanels = [
+            { trigger: document.querySelector('[data-alert-toggle="#injuryAlertsPanel"]'), panel: document.getElementById('injuryAlertsPanel') },
+            { trigger: document.querySelector('[data-alert-toggle="#attendanceAlertsPanel"]'), panel: document.getElementById('attendanceAlertsPanel') }
+        ];
+
+        function setAlertPanelState(panel, trigger, isOpen) {
+            if (!panel || !trigger) return;
+            panel.classList.toggle('is-open', isOpen);
+            panel.classList.toggle('d-none', !isOpen);
+            trigger.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+        }
+
+        alertPanels.forEach(({ trigger, panel }) => {
+            if (!trigger || !panel) return;
+
+            setAlertPanelState(panel, trigger, false);
+
+            trigger.addEventListener('click', function(event) {
+                event.preventDefault();
+                const isShown = panel.classList.contains('is-open');
+
+                alertPanels.forEach(({ trigger: otherTrigger, panel: otherPanel }) => {
+                    if (otherPanel && otherTrigger && otherPanel !== panel) {
+                        setAlertPanelState(otherPanel, otherTrigger, false);
+                    }
+                });
+
+                setAlertPanelState(panel, trigger, !isShown);
+            });
+        });
+    });
+
+    function toggleTopPerformer() {
+        const profile = document.getElementById('top-performer-profile');
+        if (profile.style.display === 'none' || profile.style.display === '') {
+            profile.style.display = 'block';
+            // Scroll to the profile smoothly
+            profile.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Re-animate progress bars if they exist
+            const bars = profile.querySelectorAll('.progress-bar');
+            bars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 100);
+            });
+        } else {
+            profile.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

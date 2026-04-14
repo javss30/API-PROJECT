@@ -1,0 +1,178 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="mb-0 fw-bold"><i class="fas fa-user-plus me-2"></i>Create Account</h2>
+                    <p class="mb-0 opacity-75">Join the Athlete Record Management system</p>
+                    <button type="button" class="btn btn-sm btn-light rounded-pill mt-2" data-bs-toggle="modal" data-bs-target="#requirementsModal">
+                        <i class="fas fa-info-circle me-1"></i> View Qualifications
+                    </button>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="signup-form">
+                            {% bootstrap_form form %}
+                        </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg rounded-pill shadow-sm">
+                                <i class="fas fa-check-circle me-2"></i>Sign Up
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-muted">Already have an account? 
+                            <a href="{% url 'login' %}" class="text-primary fw-bold text-decoration-none">Login here</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Qualifications Modal -->
+<div class="modal fade" id="requirementsModal" tabindex="-1" aria-labelledby="requirementsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header bg-primary text-white border-0 py-3">
+                <h5 class="modal-title fw-bold" id="requirementsModalLabel"><i class="fas fa-shield-alt me-2"></i>Account Qualifications</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="mb-4">
+                    <h6 class="fw-bold text-primary mb-2"><i class="fas fa-user me-2"></i>Username Requirements:</h6>
+                    <ul class="list-unstyled ms-4">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Max 150 characters</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Letters, digits and @/./+/-/_ only</li>
+                    </ul>
+                </div>
+                <div>
+                    <h6 class="fw-bold text-primary mb-2"><i class="fas fa-lock me-2"></i>Password Requirements:</h6>
+                    <ul class="list-unstyled ms-4">
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Must be at least 8 characters long</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Cannot be too similar to your personal info</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Cannot be a commonly used password</li>
+                        <li><i class="fas fa-check-circle text-success me-2"></i>Cannot be entirely numeric</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-primary rounded-pill px-4" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Hide default help texts and lists to keep UI clean */
+    .signup-form .help-text, 
+    .signup-form .form-text,
+    .signup-form ul.list-unstyled,
+    .signup-form ul {
+        display: none !important;
+    }
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .signup-form .form-label {
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .signup-form .form-control {
+        border-radius: 0.75rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid #dee2e6;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .signup-form .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    
+    /* Dark Mode Styling */
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .signup-form .form-control {
+        background-color: #343a40;
+        border-color: #495057;
+        color: #f8f9fa;
+    }
+    body.dark-mode .signup-form .form-control:focus {
+        border-color: #0d6efd;
+        background-color: #343a40;
+    }
+    body.dark-mode .text-muted {
+        color: #adb5bd !important;
+    }
+    body.dark-mode .card-header {
+        border-bottom: 1px solid #3d4246;
+    }
+    body.dark-mode .modal-content {
+        background-color: #2b3035;
+        color: #f8f9fa;
+    }
+</style>
+
+<script>
+    // Initialize Bootstrap tooltips/popovers and handle auto-modal on error
+    document.addEventListener('DOMContentLoaded', function() {
+        // Handle Modal for global requirements
+        const hasErrors = document.querySelector('.signup-form .invalid-feedback');
+        if (hasErrors) {
+            const modal = new bootstrap.Modal(document.getElementById('requirementsModal'));
+            modal.show();
+        }
+
+        // Add interactive pop-outs for input fields
+        const inputs = document.querySelectorAll('.signup-form .form-control');
+        inputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                // Check if it's a password or username field to show specific pop-out
+                let content = '';
+                if (this.name.includes('username')) {
+                    content = 'Username must be under 150 chars and use letters, digits, or @/./+/-/_.';
+                } else if (this.name.includes('password')) {
+                    content = 'Password must be 8+ chars and not too common or entirely numeric.';
+                }
+
+                if (content) {
+                    // Create a simple pop-out element
+                    const popout = document.createElement('div');
+                    popout.className = 'field-popout bg-dark text-white p-2 rounded small shadow position-absolute';
+                    popout.innerHTML = `<i class="fas fa-lightbulb text-warning me-2"></i>${content}`;
+                    popout.style.zIndex = '1000';
+                    popout.style.marginTop = '-80px';
+                    
+                    this.parentElement.style.position = 'relative';
+                    this.parentElement.appendChild(popout);
+                    
+                    // Fade out after 3 seconds
+                    setTimeout(() => {
+                        popout.style.transition = 'opacity 0.5s';
+                        popout.style.opacity = '0';
+                        setTimeout(() => popout.remove(), 500);
+                    }, 3000);
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    .field-popout {
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if coach_sport == 'Basketball' %}
+        {% with primary_bg='bg-warning' primary_text='text-warning' sport_icon='fa-basketball-ball' %}
+            {% include "management/coach_dashboard_content.html" %}
+        {% endwith %}
+    {% elif coach_sport == 'Volleyball' %}
+        {% with primary_bg='bg-info' primary_text='text-info' sport_icon='fa-volleyball-ball' %}
+            {% include "management/coach_dashboard_content.html" %}
+        {% endwith %}
+    {% elif coach_sport == 'Sepak Takraw' %}
+        {% with primary_bg='bg-success' primary_text='text-success' sport_icon='fa-circle-notch' %}
+            {% include "management/coach_dashboard_content.html" %}
+        {% endwith %}
+    {% else %}
+        {% with primary_bg='bg-primary' primary_text='text-primary' sport_icon='fa-user-tie' %}
+            {% include "management/coach_dashboard_content.html" %}
+        {% endwith %}
+    {% endif %}
+
+    <!-- Main Section -->
+    <div class="row g-4">
+        <!-- Performance Chart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Athlete Performance Overview ({{ coach_sport }})</h5>
+                </div>
+                <div class="card-body p-4">
+                    {% if chart %}
+                        <div class="text-center">
+                            <img src="data:image/png;base64,{{ chart }}" class="img-fluid rounded shadow-sm" alt="Performance Chart">
+                        </div>
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-chart-line fa-4x text-light mb-3"></i>
+                            <p class="text-muted">No performance data available to display for {{ coach_sport }}.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Actions for Coach -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Coach Actions</h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-grid gap-3">
+                        <a href="{% url 'management:payment_create' %}" class="btn btn-outline-info py-3 rounded-3 text-start">
+                            <i class="fas fa-credit-card me-2"></i> Record Payment Transaction
+                        </a>
+                        <a href="{% url 'management:athlete_list' %}" class="btn btn-outline-primary py-3 rounded-3 text-start">
+                            <i class="fas fa-user-edit me-2"></i> Update Info Records
+                        </a>
+                        <a href="{% url 'management:training_session_create' %}" class="btn btn-outline-success py-3 rounded-3 text-start">
+                            <i class="fas fa-calendar-plus me-2"></i> Add Training Schedule
+                        </a>
+                        <a href="{% url 'management:monitor_progress' %}" class="btn btn-outline-info py-3 rounded-3 text-start">
+                            <i class="fas fa-chart-bar me-2"></i> Monitor Progress
+                        </a>
+                    </div>
+                    
+                    <div class="mt-4 pt-3 border-top">
+                        <h6 class="fw-bold small text-muted text-uppercase mb-3">Recent {{ coach_sport }} Sessions</h6>
+                        <div class="list-group list-group-flush">
+                            {% for session in sessions %}
+                            <div class="list-group-item px-0 border-0 mb-2">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1 fw-bold">{{ session.athlete.user.username }}</h6>
+                                    <small class="text-muted">{{ session.session_date|date:"M d" }}</small>
+                                </div>
+                                <p class="mb-1 small text-muted">{{ session.notes|truncatechars:40 }}</p>
+                            </div>
+                            {% empty %}
+                            <p class="small text-muted">No recent sessions.</p>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .icon-shape {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 60px;
+        height: 60px;
+    }
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .card {
+        transition: transform 0.3s ease;
+    }
+    .card:hover {
+        transform: translateY(-5px);
+    }
+    /* Dark Mode Support */
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+    }
+    body.dark-mode .card-header, body.dark-mode .card-footer {
+        background-color: transparent !important;
+        border-color: #3d4246 !important;
+    }
+    body.dark-mode .text-dark {
+        color: #f8f9fa !important;
+    }
+</style>
+{% endblock %}

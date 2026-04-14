@@ -1,0 +1,48 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="display-5 fw-bold"><i class="fas {{ sport_icon }} me-2 {{ primary_text }}"></i>{{ coach_sport }} Coach Dashboard</h1>
+    <div class="text-muted">Welcome back, <strong>{{ coach.user.get_full_name|default:coach.user.username }}</strong></div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row g-4 mb-5">
+    <div class="col-md-6">
+        <a href="{% url 'management:athlete_list' %}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-body p-4 {{ primary_bg }} text-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="icon-shape bg-white {{ primary_text }} rounded-3 p-3">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                    <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Assigned Athletes ({{ coach_sport }})</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ athletes_count }}</h2>
+                </div>
+                <div class="card-footer bg-white border-0 py-3">
+                    <span class="text-decoration-none {{ primary_text }} small fw-bold">
+                        View My Athletes <i class="fas fa-arrow-right ms-1"></i>
+                    </span>
+                </div>
+            </div>
+        </a>
+    </div>
+    <div class="col-md-6">
+        <a href="{% url 'management:training_session_list' %}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm h-100 rounded-4 overflow-hidden">
+                <div class="card-body p-4 bg-secondary text-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="icon-shape bg-white text-secondary rounded-3 p-3">
+                            <i class="fas fa-calendar-check fa-2x"></i>
+                        </div>
+                    </div>
+                    <h6 class="text-uppercase fw-semibold mb-1 opacity-75">Active Sessions ({{ coach_sport }})</h6>
+                    <h2 class="display-6 fw-bold mb-0">{{ sessions_count }}</h2>
+                </div>
+                <div class="card-footer bg-white border-0 py-3">
+                    <span class="text-decoration-none text-secondary small fw-bold">
+                        Manage Schedule <i class="fas fa-arrow-right ms-1"></i>
+                    </span>
+                </div>
+            </div>
+        </a>
+    </div>
+</div>

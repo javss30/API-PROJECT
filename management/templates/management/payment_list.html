@@ -1,0 +1,115 @@
+
+{% extends 'base.html' %}
+{% load django_bootstrap5 %}
+
+{% block content %}
+<div class="container mt-4">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show rounded-4 shadow-sm mb-4" role="alert">
+                <i class="fas fa-check-circle me-2"></i>{{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold"><i class="fas fa-money-bill-wave me-2 text-primary"></i>Payments</h1>
+        <a href="{% url 'management:payment_create' %}" class="btn btn-primary rounded-pill shadow-sm">
+            <i class="fas fa-plus me-2"></i>{% if is_athlete %}Make Payment{% else %}Add Payment{% endif %}
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">Athlete</th>
+                        <th>Amount</th>
+                        <th>Method</th>
+                        <th>Payment Date</th>
+                        <th>Transaction ID</th>
+                        <th class="text-end pe-4">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                {% if payment.athlete.profile_picture %}
+                                    <img src="{{ payment.athlete.profile_picture.url }}" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                                {% else %}
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        {{ payment.athlete.user.username|slice:":1"|upper }}
+                                    </div>
+                                {% endif %}
+                                <div>
+                                    <div class="fw-bold">{{ payment.athlete.user.get_full_name|default:payment.athlete.user.username }}</div>
+                                    <div class="small text-muted">{{ payment.athlete.user.email }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="fw-bold text-dark">${{ payment.amount }}</td>
+                        <td>
+                            {% if payment.payment_method == 'GCash' %}
+                                <span class="badge bg-primary-light text-primary border border-primary-subtle"><i class="fas fa-mobile-alt me-1"></i>GCash</span>
+                            {% elif payment.payment_method == 'BDO' or payment.payment_method == 'Metrobank' %}
+                                <span class="badge bg-info-light text-info border border-info-subtle"><i class="fas fa-university me-1"></i>{{ payment.payment_method }}</span>
+                            {% else %}
+                                <span class="badge bg-light text-dark border"><i class="fas fa-cash-register me-1"></i>OTC</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ payment.payment_date|date:"F d, Y, g:i a" }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ payment.transaction_id }}</span></td>
+                        <td class="text-end pe-4">
+                            <a href="{% url 'management:payment_update' payment.pk %}" class="btn btn-sm btn-warning rounded-pill me-1">Edit</a>
+                            <a href="{% url 'management:payment_delete' payment.pk %}" class="btn btn-sm btn-danger rounded-pill">Delete</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <i class="fas fa-money-bill-wave fa-3x text-light mb-3"></i>
+                            <p class="text-muted">No payments recorded yet.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .rounded-4 {
+        border-radius: 1.25rem !important;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.05);
+    }
+    body.dark-mode .card {
+        background-color: #2b3035;
+        color: #f8f9fa;
+        border: 1px solid #3d4246;
+    }
+    body.dark-mode .bg-light {
+        background-color: #343a40 !important;
+    }
+    body.dark-mode .text-dark {
+        color: #f8f9fa !important;
+    }
+    body.dark-mode .table {
+        color: #f8f9fa;
+    }
+    body.dark-mode .table-hover tbody tr:hover {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    body.dark-mode .badge.bg-light {
+        background-color: #343a40 !important;
+        color: #f8f9fa !important;
+        border-color: #495057 !important;
+    }
+</style>
+{% endblock %}

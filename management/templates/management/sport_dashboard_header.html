@@ -1,0 +1,18 @@
+<!-- Header with Breadcrumbs and Date/Time -->
+<div class="d-flex justify-content-between align-items-center mb-4 px-3">
+    <div>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-1">
+                <li class="breadcrumb-item"><a href="{% url 'home' %}" class="text-decoration-none">Home</a></li>
+                <li class="breadcrumb-item active">{{ coach_sport }} Coach Dashboard</li>
+            </ol>
+        </nav>
+        <h1 class="display-6 fw-bold text-dark"><i class="fas {{ sport_icon }} me-2 {{ primary_text }}"></i>Coach Dashboard</h1>
+    </div>
+    <div class="text-end">
+        <div class="fw-bold text-dark">{{ today|date:"l, F j, Y" }}</div>
+        <div class="badge {{ primary_bg }} text-white px-3 py-2 rounded-pill shadow-sm">
+            <i class="fas fa-users me-1"></i> {{ athletes_count }} Athletes Assigned
+        </div>
+    </div>
+</div>

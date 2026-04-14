@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+        <div>
+            <h3 class="fw-bold text-dark mb-0"><i class="fas fa-balance-scale me-2"></i>Player Comparison</h3>
+            <p class="text-muted mb-0">Compare real-time statistics between two athletes.</p>
+        </div>
+        <a href="{% url 'management:dashboard' %}" class="btn btn-outline-secondary rounded-pill"><i class="fas fa-arrow-left me-2"></i>Back to Dashboard</a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4 bg-light">
+            <form action="{% url 'management:player_comparison' %}" method="get" class="row g-3 justify-content-center">
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-muted small">Select Player 1</label>
+                    <select name="athlete1" class="form-select rounded-3 border-2 p-2">
+                        <option value="">-- Choose Athlete --</option>
+                        {% for a in athletes %}
+                        <option value="{{ a.id }}" {% if comparison_data and comparison_data.a1.id == a.id %}selected{% endif %}>{{ a.user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-1 d-flex flex-column justify-content-center text-center">
+                    <span class="fs-4 fw-bold">VS</span>
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label fw-bold text-muted small">Select Player 2</label>
+                    <select name="athlete2" class="form-select rounded-3 border-2 p-2">
+                        <option value="">-- Choose Athlete --</option>
+                        {% for a in athletes %}
+                        <option value="{{ a.id }}" {% if comparison_data and comparison_data.a2.id == a.id %}selected{% endif %}>{{ a.user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-11 d-grid mt-3">
+                    <button type="submit" class="btn btn-dark rounded-pill fw-bold p-2 text-uppercase">Compare</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {% if comparison_data %}
+    <div class="row g-4">
+        <!-- Player 1 Column -->
+        <div class="col-md-5 text-center">
+            <div class="card border-0 shadow rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-primary text-white py-4">
+                    {% if comparison_data.a1.profile_picture %}
+                        <img src="{{ comparison_data.a1.profile_picture.url }}" class="rounded-circle border border-4 border-white mb-2" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                    {% endif %}
+                    <h4 class="fw-bold mb-0">{{ comparison_data.a1.user.username }}</h4>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item p-4">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat1.points|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4 bg-light">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat1.assists|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat1.rebounds|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4 bg-light">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat1.speed|default:"0.0" }}</h2>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics Column -->
+        <div class="col-md-2 text-center">
+            <div class="card border-0 shadow-none bg-transparent rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-transparent border-0 py-4" style="visibility: hidden;">
+                    <div style="width: 100px; height: 100px; margin: 0 auto; margin-bottom: 0.5rem;"></div>
+                    <h4 class="fw-bold mb-0">Hidden</h4>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush w-100 border-0">
+                        <li class="list-group-item d-flex align-items-center justify-content-center border-0 bg-white p-4">
+                            <h2 class="mb-0"><span class="badge bg-secondary text-uppercase fs-6 px-3 shadow-sm">{{ stat_labels.l1 }}</span></h2>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center justify-content-center border-0 bg-light p-4">
+                            <h2 class="mb-0"><span class="badge bg-secondary text-uppercase fs-6 px-3 shadow-sm">{{ stat_labels.l2 }}</span></h2>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center justify-content-center border-0 bg-white p-4">
+                            <h2 class="mb-0"><span class="badge bg-secondary text-uppercase fs-6 px-3 shadow-sm">{{ stat_labels.l3 }}</span></h2>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center justify-content-center border-0 bg-light p-4">
+                            <h2 class="mb-0"><span class="badge bg-secondary text-uppercase fs-6 px-3 shadow-sm">Speed</span></h2>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player 2 Column -->
+        <div class="col-md-5 text-center">
+            <div class="card border-0 shadow rounded-4 overflow-hidden h-100">
+                <div class="card-header bg-danger text-white py-4">
+                    {% if comparison_data.a2.profile_picture %}
+                        <img src="{{ comparison_data.a2.profile_picture.url }}" class="rounded-circle border border-4 border-white mb-2" style="width: 100px; height: 100px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-white text-danger rounded-circle d-flex align-items-center justify-content-center mx-auto mb-2" style="width: 100px; height: 100px;">
+                            <i class="fas fa-user fa-3x"></i>
+                        </div>
+                    {% endif %}
+                    <h4 class="fw-bold mb-0">{{ comparison_data.a2.user.username }}</h4>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item p-4">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat2.points|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4 bg-light">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat2.assists|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat2.rebounds|default:"0" }}</h2>
+                        </li>
+                        <li class="list-group-item p-4 bg-light">
+                            <h2 class="fw-bold mb-0 text-dark">{{ comparison_data.stat2.speed|default:"0.0" }}</h2>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
